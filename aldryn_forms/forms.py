@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.conf import settings
 from django.forms.forms import NON_FIELD_ERRORS
@@ -9,31 +11,95 @@ from PIL import Image
 
 from .models import FormPlugin, FormSubmission
 from .sizefield.utils import filesizeformat
-from .utils import add_form_error, get_user_model
+from .utils import add_form_error, get_action_backends, get_user_model
 
 
 class FileSizeCheckMixin(object):
+
     def __init__(self, *args, **kwargs):
+        self.files = []  # This is set in FormPlugin.process_form() in cms_plugins.py
         self.max_size = kwargs.pop('max_size', None)
+        self.accepted_types = kwargs.pop('accepted_types', [])
         super(FileSizeCheckMixin, self).__init__(*args, **kwargs)
 
     def clean(self, *args, **kwargs):
-        data = super(FileSizeCheckMixin, self).clean(*args, **kwargs)
+        super(FileSizeCheckMixin, self).clean(*args, **kwargs)
 
-        if data is None:
-            return
+        if not self.files:
+            return []
 
-        if self.max_size is not None and data.size > self.max_size:
-            raise forms.ValidationError(
-                ugettext('File size must be under %(max_size)s. Current file size is %(actual_size)s.') % {
-                    'max_size': filesizeformat(self.max_size),
-                    'actual_size': filesizeformat(data.size),
-                })
-        return data
+        all_errors = []
+
+        # Check file extension.
+        if self.accepted_types:
+            accepted_types, main_mimetypes = self.split_mimetypes(self.accepted_types)
+            errors = []
+            for file_in_memory in self.files:
+                match = re.search(r'(\.\w+)$', file_in_memory.name.lower())
+                extension = match.group(1) if match else None  # '.csv'
+                if not (
+                        extension in self.accepted_types
+                        or file_in_memory.content_type in self.accepted_types
+                        or file_in_memory.content_type.split("/")[0] in main_mimetypes
+                        ):
+                    errors.append(ugettext('"%(file_name)s" is not of accepted file type.') % {
+                        'file_name': file_in_memory.name,
+                    })
+            if errors:
+                all_errors.append(
+                    " ".join(errors) + " " + ugettext("Accepted file types are") + ": " + ", ".join(
+                        self.accepted_types) + ".")
+
+        # Check files size summary.
+        if self.max_size is not None:
+            errors = []
+            files_size_summary = 0
+            for file_in_memory in self.files:
+                files_size_summary += file_in_memory.size
+            if files_size_summary > self.max_size:
+                if len(self.files) > 1:
+                    msg = ugettext('The total file size has exceeded the specified limit %(size)s.')
+                else:
+                    msg = ugettext('File size exceeded the specified limit %(size)s.')
+                all_errors.append(msg % {'size': filesizeformat(self.max_size)})
+
+        if all_errors:
+            raise forms.ValidationError(" ".join(all_errors))
+        return self.files
+
+    def split_mimetypes(self, accepted_types):
+        """Split mimetypes with wildcards."""
+        # Example of accepted_types: ['.pdf', 'text/plain', 'application/msword', 'image/*', 'text/*']
+        accepted, main_mimetypes = [], []
+        for name in accepted_types:
+            match = re.match(r'(\w+)/\*', name)
+            if match:
+                main_mimetypes.append(match.group(1))
+            else:
+                accepted.append(name)
+        return accepted, main_mimetypes
 
 
 class RestrictedFileField(FileSizeCheckMixin, forms.FileField):
     pass
+
+
+class RestrictedMultipleFilesField(FileSizeCheckMixin, forms.FileField):
+
+    def __init__(self, *args, **kwargs):
+        self.max_files = kwargs.pop('max_files', None)
+        super(RestrictedMultipleFilesField, self).__init__(*args, **kwargs)
+
+    def clean(self, *args, **kwargs):
+        super(RestrictedMultipleFilesField, self).clean(*args, **kwargs)
+        if not self.files:
+            return []
+        if self.max_files is not None and len(self.files) > self.max_files:
+            raise forms.ValidationError(
+                ugettext("The number of uploaded files exceeded the set limit of %(limit)s.") % {
+                    'limit': self.max_files
+                })
+        return self.files
 
 
 class RestrictedImageField(FileSizeCheckMixin, forms.ImageField):
@@ -177,6 +243,11 @@ class FormPluginForm(ExtandableErrorForm):
             self.cleaned_data['url'] = None
             self.cleaned_data['redirect_page'] = None
 
+        action_backend = get_action_backends().get(self.cleaned_data.get('action_backend'))
+        if action_backend is not None:
+            error = getattr(action_backend, "clean_form", lambda form: None)(self)
+            if error:
+                self.append_to_errors('action_backend', error)
         return self.cleaned_data
 
 
@@ -219,6 +290,8 @@ class MinMaxValueForm(ExtandableErrorForm):
         max_value = self.cleaned_data.get('max_value')
         if min_value and max_value and min_value > max_value:
             self.append_to_errors('min_value', _(u'Min value can not be greater than max value.'))
+        if self.cleaned_data.get('required') and min_value is not None and min_value < 1:
+            self.append_to_errors('min_value', _('If checkbox "Field is required" is set, "Min choices" must be at least 1.'))
         return self.cleaned_data
 
 
@@ -265,6 +338,15 @@ class EmailFieldForm(TextFieldForm):
             'email_body',
             'custom_classes',
         ]
+
+    def clean(self):
+        if "name" in self.changed_data:
+            _, action_backend = self.instance.get_parent_form_action_backend()
+            if action_backend is not None:
+                error = getattr(action_backend, "clean_field", lambda form: None)(self)
+                if error:
+                    self.append_to_errors('name', error)
+        return super().clean()
 
 
 class FileFieldForm(forms.ModelForm):

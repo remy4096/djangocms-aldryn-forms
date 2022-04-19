@@ -1,27 +1,33 @@
 import json
+import re
 import warnings
 from collections import defaultdict
 from collections import namedtuple
 from functools import partial
 from typing import List
 
-from cms.models.fields import PageField
-from cms.models.pluginmodel import CMSPlugin
-from cms.utils.plugins import downcast_plugins
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.functions import Coalesce
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
+
+from cms.cms_plugins import AliasPlugin
+from cms.models.fields import PageField
+from cms.models.pluginmodel import CMSPlugin
+from cms.utils.plugins import downcast_plugins
+
 from djangocms_attributes_field.fields import AttributesField
 from filer.fields.folder import FilerFolderField
 
 from .compat import build_plugin_tree
 from .helpers import is_form_element
 from .sizefield.models import FileSizeField
-from .utils import ALDRYN_FORMS_ACTION_BACKEND_KEY_MAX_SIZE
-from .utils import action_backend_choices
+from .utils import (
+    ALDRYN_FORMS_ACTION_BACKEND_KEY_MAX_SIZE, action_backend_choices,
+    get_action_backends,
+)
 
 
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
@@ -250,11 +256,15 @@ class BaseFormPlugin(CMSPlugin):
         field_type_occurrences = defaultdict(lambda: 1)
 
         form_elements = self.get_form_elements()
-        field_plugins = [
-            plugin for plugin in form_elements
-            if issubclass(plugin.get_plugin_class(), Field)
-        ]
+        field_plugins = []
+        for plugin in form_elements:
+            if issubclass(plugin.get_plugin_class(), Field):
+                field_plugins.append(plugin)
+            elif issubclass(plugin.get_plugin_class(), AliasPlugin) and \
+                    issubclass(plugin.plugin.get_plugin_class(), Field):
+                field_plugins.append(plugin.plugin.get_plugin_instance()[0])
 
+        unique_field_names = []
         for field_plugin in field_plugins:
             field_type = field_plugin.field_type
 
@@ -276,6 +286,11 @@ class BaseFormPlugin(CMSPlugin):
 
             if field_id in field_occurrences:
                 field_occurrences[field_id] += 1
+
+            # Make filed names unique.
+            while field_name in unique_field_names:
+                field_name += "_"
+            unique_field_names.append(field_name)
 
             field = FormField(
                 name=field_name,
@@ -478,6 +493,20 @@ class EmailFieldPlugin(FieldPluginBase):
                     'are active.')
     )
 
+    def get_parent_form(self):
+        parent = self.get_parent()
+        while parent is not None:
+            if parent.plugin_type in ("FormPlugin", "EmailNotificationForm"):
+                break
+            parent = parent.get_parent()
+        return parent
+
+    def get_parent_form_action_backend(self):
+        parent = self.get_parent_form()
+        if parent is not None:
+            return parent, get_action_backends().get(parent.get_plugin_instance()[0].action_backend)
+        return None, None
+
 
 class FileFieldPluginBase(FieldPluginBase):
     upload_to = FilerFolderField(
@@ -487,18 +516,53 @@ class FileFieldPluginBase(FieldPluginBase):
         on_delete=models.CASCADE,
     )
     max_size = FileSizeField(
-        verbose_name=_('Maximum file size'),
+        verbose_name=_('Maximum files size'),
         null=True, blank=True,
-        help_text=_('The maximum file size of the upload, in bytes. You can '
+        help_text=_('The maximum size of all files to upload, in bytes. You can '
                     'use common size suffixes (kB, MB, GB, ...).')
+    )
+    enable_js = models.NullBooleanField(
+        verbose_name=_('Enable js'),
+        null=True, blank=True,
+        help_text=_('Enable javascript to view files for upload.')
     )
 
     class Meta:
         abstract = True
 
 
+def validate_accepted_types(value):
+    """Validate accepted types."""
+    for code in re.split(r"\s+", value):
+        if code[:1] == '.':
+            if not re.match(r'\.\w+', code):
+                raise ValidationError(_('%(value)s is not extension.'), params={'value': value})
+        else:
+            if not re.match(r'\w+/(\w+|\*)', code):
+                raise ValidationError(_('%(value)s is not mimetype.'), params={'value': value})
+
+
 class FileUploadFieldPlugin(FileFieldPluginBase):
-    pass
+    accepted_types = models.CharField(
+        verbose_name=_('Accepted types'),
+        max_length=255, null=True, blank=True,
+        help_text=_('The list of accepted types. E.g. ".pdf .jpg .png text/plain application/msword image/*".'),
+        validators=[validate_accepted_types]
+    )
+
+
+class MultipleFilesUploadFieldPlugin(FileFieldPluginBase):
+    accepted_types = models.CharField(
+        verbose_name=_('Accepted types'),
+        max_length=255, null=True, blank=True,
+        help_text=_('The list of accepted types. E.g. ".pdf .jpg .png text/plain application/msword image/*".'),
+        validators=[validate_accepted_types]
+    )
+    max_files = models.PositiveSmallIntegerField(
+        verbose_name=_('Max. files'),
+        null=True, blank=True,
+        help_text=_('Maximum number of uploaded files.'),
+    )
 
 
 class ImageUploadFieldPlugin(FileFieldPluginBase):
@@ -551,13 +615,15 @@ class FormButtonPlugin(CMSPlugin):
         return self.label
 
 
-class FormSubmission(models.Model):
+class FormSubmissionBase(models.Model):
+
     name = models.CharField(
         max_length=255,
         verbose_name=_('form name'),
         db_index=True,
         editable=False
     )
+
     data = models.TextField(blank=True, editable=False)
     recipients = models.TextField(
         verbose_name=_('users notified'),
@@ -579,9 +645,7 @@ class FormSubmission(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-sent_at']
-        verbose_name = _('Form submission')
-        verbose_name_plural = _('Form submissions')
+        abstract = True
 
     def __str__(self):
         return self.name
@@ -640,3 +704,11 @@ class FormSubmission(models.Model):
         raw_recipients = [
             {'name': rec[0], 'email': rec[1]} for rec in recipients]
         self.recipients = json.dumps(raw_recipients)
+
+
+class FormSubmission(FormSubmissionBase):
+
+    class Meta:
+        ordering = ['-sent_at']
+        verbose_name = _('Form submission')
+        verbose_name_plural = _('Form submissions')

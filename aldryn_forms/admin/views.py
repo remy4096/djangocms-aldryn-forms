@@ -1,4 +1,4 @@
-from django import get_version
+from django import VERSION as DJANGO_VERSION
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -10,8 +10,10 @@ from .forms import FormExportStep1Form, FormExportStep2Form
 
 
 mimetype_map = {
-    'xls': 'application/vnd.ms-excel',
     'csv': 'text/csv',
+    'xlsx': 'application/vnd.ms-excel',
+    'xls': 'application/vnd.ms-excel',
+    'tsv': 'text/tab-separated-values',
     'html': 'text/html',
     'yaml': 'text/yaml',
     'json': 'application/json',
@@ -93,6 +95,15 @@ class FormExportWizardView(SessionWizardView):
         filename = step_1_form.get_filename(extension=self.file_type)
 
         content_type = self.get_content_type()
-        response = HttpResponse(dataset.xls, content_type=content_type)
+
+        response_kwargs = {}
+
+        if DJANGO_VERSION <= (1, 6):
+            # Django <= 1.6 compatibility
+            response_kwargs['mimetype'] = content_type
+        else:
+            response_kwargs['content_type'] = content_type
+
+        response = HttpResponse(getattr(dataset, self.file_type), **response_kwargs)
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
         return response

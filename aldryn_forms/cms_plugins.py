@@ -1,38 +1,35 @@
 from typing import Dict
+import re
 
 from PIL import Image
-from aldryn_forms.models import FormPlugin
-from cms.plugin_base import CMSPluginBase
-from cms.plugin_pool import plugin_pool
 from django import forms
+from django.conf import settings
+from django.contrib import messages
 from django.contrib.admin import TabularInline
 from django.core.validators import MinLengthValidator
 from django.db.models import query
 from django.template.loader import select_template
-from django.utils.translation import ugettext
+from django.utils.safestring import mark_safe
+from django.utils.translation import get_language, ugettext
 from django.utils.translation import ugettext_lazy as _
+
+from cms.plugin_base import CMSPluginBase
+from cms.plugin_pool import plugin_pool
+
+import markdown
 from emailit.api import send_mail
-from filer.models import filemodels
-from filer.models import imagemodels
+from emailit.utils import get_template_names
+from filer.models import filemodels, imagemodels
 
 from . import models
-from .forms import BooleanFieldForm
-from .forms import CaptchaFieldForm
-from .forms import EmailFieldForm
-from .forms import FileFieldForm
-from .forms import FormPluginForm
-from .forms import FormSubmissionBaseForm
-from .forms import HiddenFieldForm
-from .forms import ImageFieldForm
-from .forms import MultipleSelectFieldForm
-from .forms import RadioFieldForm
-from .forms import RestrictedFileField
-from .forms import RestrictedImageField
-from .forms import SelectFieldForm
-from .forms import TextAreaFieldForm
-from .forms import TextFieldForm
+from .forms import (
+    BooleanFieldForm, CaptchaFieldForm, EmailFieldForm, FileFieldForm,
+    FormPluginForm, FormSubmissionBaseForm, HiddenFieldForm, ImageFieldForm,
+    MultipleSelectFieldForm, RadioFieldForm, RestrictedFileField,
+    RestrictedImageField, RestrictedMultipleFilesField, SelectFieldForm,
+    TextAreaFieldForm, TextFieldForm,
+)
 from .helpers import get_user_name
-from .models import FileUploadFieldPlugin
 from .models import SerializedFormField
 from .signals import form_post_save
 from .signals import form_pre_save
@@ -112,6 +109,12 @@ class FormPlugin(FieldContainer):
         form_kwargs = self.get_form_kwargs(instance, request)
         form = form_class(**form_kwargs)
 
+        # Put files into fields.
+        if form.files:
+            for input_name in form.files.keys():
+                if input_name in form.fields:
+                    form.fields[input_name].files = form.files.getlist(input_name)
+
         if request.POST.get('form_plugin_id') == str(instance.id) and form.is_valid():
             fields = [field for field in form.base_fields.values()
                       if hasattr(field, '_plugin_instance')]
@@ -189,6 +192,17 @@ class FormPlugin(FieldContainer):
     def get_success_url(self, instance):
         return instance.success_url
 
+    def send_success_message(self, instance, request):
+        """
+        Sends a success message to the request user
+        using django's contrib.messages app.
+        """
+        if instance.success_message:
+            message = markdown.markdown(instance.success_message)
+        else:
+            message = ugettext('The form has been sent.')
+        messages.success(request, mark_safe(message))
+
     def send_notifications(self, instance, form):
         users = instance.recipients.exclude(email='')
 
@@ -201,11 +215,29 @@ class FormPlugin(FieldContainer):
             'form_plugin': instance,
         }
 
+        from_email = None
+        for field_name, field_instance in form.fields.items():
+            if hasattr(field_instance, '_model_instance') and \
+                    field_instance._model_instance.plugin_type == 'EmailIntoFromField':
+                if form.cleaned_data.get(field_name):
+                    from_email = form.cleaned_data[field_name]
+                    break
+
+        subject_template_base = getattr(settings, 'ALDRYN_FORMS_EMAIL_SUBJECT_TEMPLATES_BASE',
+            getattr(settings, 'ALDRYN_FORMS_EMAIL_TEMPLATES_BASE', None))
+        if subject_template_base:
+            language = instance.language or get_language()
+            subject_templates = get_template_names(language, subject_template_base, 'subject', 'txt')
+        else:
+            subject_templates = None
+
         send_mail(
             recipients=[user.email for user in recipients],
             context=context,
-            template_base='aldryn_forms/emails/notification',
+            template_base=getattr(settings, 'ALDRYN_FORMS_EMAIL_TEMPLATES_BASE', 'aldryn_forms/emails/notification'),
+            subject_templates=subject_templates,
             language=instance.language,
+            from_email=from_email,
         )
 
         users_notified = [
@@ -571,6 +603,10 @@ class EmailField(BaseTextField):
             self.send_notification_email(email, form, instance)
 
 
+class EmailIntoFromField(EmailField):
+    name = _('Email into From Field')
+
+
 class FileField(Field):
     name = _('File upload field')
     model = models.FileUploadFieldPlugin
@@ -591,9 +627,21 @@ class FileField(Field):
     fieldset_advanced_fields = [
         'help_text',
         'max_size',
+        'accepted_types',
         'required_message',
         'custom_classes',
+        'enable_js',
     ]
+
+    def get_form_field_widget_attrs(self, instance):
+        attrs = super(FileField, self).get_form_field_widget_attrs(instance)
+        if hasattr(instance, 'accepted_types') and instance.accepted_types:
+            attrs['accept'] = ",".join(re.split(r"\s+", instance.accepted_types))
+        if instance.max_size:
+            attrs['data-max_size'] = instance.max_size
+        if instance.enable_js:
+            attrs['data-enable_js'] = "on"
+        return attrs
 
     def get_form_field_kwargs(self, instance):
         kwargs = super(FileField, self).get_form_field_kwargs(instance)
@@ -602,13 +650,16 @@ class FileField(Field):
                 kwargs['help_text'] = kwargs['help_text'].replace(
                     'MAXSIZE', filesizeformat(instance.max_size))
             kwargs['max_size'] = instance.max_size
+        if hasattr(instance, 'accepted_types') and instance.accepted_types:
+            kwargs['accepted_types'] = re.split(r"\s+", instance.accepted_types)
         return kwargs
 
     def serialize_value(self, instance, value, is_confirmation=False):
-        if value:
-            return value.absolute_uri
-        else:
-            return '-'
+        links = []
+        for item in value:
+            if item:
+                links.append(item.original_filename if is_confirmation else item.absolute_uri)
+        return "\n".join(links)
 
     def form_pre_save(self, instance, form, **kwargs):
         """Save the uploaded file to django-filer
@@ -618,36 +669,64 @@ class FileField(Field):
         """
         request = kwargs['request']
 
+        filer_file_instances = []
         field_name = form.form_plugin.get_form_field_name(field=instance)
 
-        uploaded_file = form.cleaned_data[field_name]
+        for uploaded_file in request.FILES.getlist(field_name):
+            try:
+                with Image.open(uploaded_file) as img:
+                    img.verify()
+            except:  # noqa
+                model = filemodels.File
+            else:
+                model = imagemodels.Image
 
-        if uploaded_file is None:
-            return
+            filer_file = model(
+                folder=instance.upload_to,
+                file=uploaded_file,
+                name=uploaded_file.name,
+                original_filename=uploaded_file.name,
+                is_public=True,
+            )
+            filer_file.save()
 
-        try:
-            with Image.open(uploaded_file) as img:
-                img.verify()
-        except:  # noqa
-            model = filemodels.File
-        else:
-            model = imagemodels.Image
+            # NOTE: This is a hack to make the full URL available later when we
+            # need to serialize this field. We avoid to serialize it here directly
+            # as we could still need access to the original filer File instance.
+            filer_file.absolute_uri = request.build_absolute_uri(filer_file.url)
+            filer_file_instances.append(filer_file)
 
-        filer_file = model(
-            folder=instance.upload_to,
-            file=uploaded_file,
-            name=uploaded_file.name,
-            original_filename=uploaded_file.name,
-            is_public=True,
-        )
-        filer_file.save()
+        form.cleaned_data[field_name] = filer_file_instances
 
-        # NOTE: This is a hack to make the full URL available later when we
-        # need to serialize this field. We avoid to serialize it here directly
-        # as we could still need access to the original filer File instance.
-        filer_file.absolute_uri = request.build_absolute_uri(filer_file.url)
 
-        form.cleaned_data[field_name] = filer_file
+class MultipleFilesField(FileField):
+
+    name = _('Multiple files upload field')
+    model = models.MultipleFilesUploadFieldPlugin
+    form_field = RestrictedMultipleFilesField
+    form_field_widget = RestrictedMultipleFilesField.widget
+    fieldset_advanced_fields = [
+        'help_text',
+        'max_size',
+        'max_files',
+        'accepted_types',
+        'required_message',
+        'custom_classes',
+        'enable_js',
+    ]
+
+    def get_form_field_widget_attrs(self, instance):
+        attrs = super(MultipleFilesField, self).get_form_field_widget_attrs(instance)
+        attrs['multiple'] = True
+        if instance.max_files:
+            attrs['data-max_files'] = instance.max_files
+        return attrs
+
+    def get_form_field_kwargs(self, instance):
+        kwargs = super(MultipleFilesField, self).get_form_field_kwargs(instance)
+        if instance.max_files:
+            kwargs['max_files'] = instance.max_files
+        return kwargs
 
 
 class ImageField(FileField):
@@ -870,7 +949,9 @@ class SubmitButton(FormElement):
 
 plugin_pool.register_plugin(BooleanField)
 plugin_pool.register_plugin(EmailField)
+plugin_pool.register_plugin(EmailIntoFromField)
 plugin_pool.register_plugin(FileField)
+plugin_pool.register_plugin(MultipleFilesField)
 plugin_pool.register_plugin(HiddenField)
 plugin_pool.register_plugin(PhoneField)
 plugin_pool.register_plugin(NumberField)

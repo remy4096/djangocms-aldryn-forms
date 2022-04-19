@@ -1,12 +1,18 @@
 from __future__ import division, print_function, unicode_literals
 
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 
 from cms.api import add_plugin
 from cms.models import Placeholder
 
-from aldryn_forms.models import Option
+from filer.models import Folder
+
+from aldryn_forms.models import (
+    FileUploadFieldPlugin, ImageUploadFieldPlugin,
+    MultipleFilesUploadFieldPlugin, Option,
+)
 
 
 class OptionTestCase(TestCase):
@@ -89,3 +95,61 @@ class OptionTestCase(TestCase):
         self.assertEquals(option1.position, 960)  # We force a value for it on Option.save
 
         self.assertRaises(IntegrityError, Option.objects.update, position=None)  # See? Not nullable
+
+
+class FileUploadFieldPluginTest(TestCase):
+
+    def test(self):
+        field = FileUploadFieldPlugin(max_size=42)
+        self.assertEqual(field.max_size, 42)
+        self.assertIsNone(field.enable_js)
+        field = FileUploadFieldPlugin(enable_js=True)
+        self.assertTrue(field.enable_js)
+        self.assertIsNone(field.max_size)
+        self.assertIsNone(field.accepted_types)
+
+    def test_accepted_types(self):
+        folder = Folder.objects.create(name='Test')
+        field = FileUploadFieldPlugin.objects.create(upload_to=folder, accepted_types='.pdf text/plain image/*')
+        self.assertIsNone(field.full_clean())
+
+    def test_accepted_types_fails(self):
+        folder = Folder.objects.create(name='Test')
+        field = FileUploadFieldPlugin.objects.create(upload_to=folder, accepted_types='pdf text')
+        with self.assertRaisesMessage(ValidationError, "{'accepted_types': ['pdf text is not mimetype.']}"):
+            field.full_clean()
+
+
+class MultipleFilesUploadFieldPluginTest(TestCase):
+
+    def test(self):
+        field = MultipleFilesUploadFieldPlugin(max_size=42)
+        self.assertEqual(field.max_size, 42)
+        self.assertIsNone(field.enable_js)
+        field = MultipleFilesUploadFieldPlugin(enable_js=True)
+        self.assertTrue(field.enable_js)
+        self.assertIsNone(field.max_size)
+        self.assertIsNone(field.accepted_types)
+
+    def test_accepted_types(self):
+        folder = Folder.objects.create(name='Test')
+        field = MultipleFilesUploadFieldPlugin.objects.create(
+            upload_to=folder, accepted_types='.pdf text/plain image/*')
+        self.assertIsNone(field.full_clean())
+
+    def test_accepted_types_fails(self):
+        folder = Folder.objects.create(name='Test')
+        field = MultipleFilesUploadFieldPlugin.objects.create(upload_to=folder, accepted_types='pdf text')
+        with self.assertRaisesMessage(ValidationError, "{'accepted_types': ['pdf text is not mimetype.']}"):
+            field.full_clean()
+
+
+class ImageUploadFieldPluginTest(TestCase):
+
+    def test(self):
+        field = ImageUploadFieldPlugin(max_size=42)
+        self.assertEqual(field.max_size, 42)
+        self.assertIsNone(field.enable_js)
+        field = ImageUploadFieldPlugin(enable_js=True)
+        self.assertTrue(field.enable_js)
+        self.assertIsNone(field.max_size)

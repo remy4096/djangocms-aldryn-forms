@@ -1,4 +1,8 @@
-{% load i18n cms_tags sekizai_tags %}
+{% load i18n cms_tags sekizai_tags static aldryn_forms_tags %}
+
+{% addtoblock "js" %}
+    <script src="{% static "aldryn_forms/js/main.js" %}"></script>
+{% endaddtoblock %}
 
 <form method="post"
     id="cms-form"
@@ -8,22 +12,29 @@
     {% if instance.custom_classes %} class="{{ instance.custom_classes }}"{% endif %}>
 
     {% if form.non_field_errors %}
-        {% for error in form.non_field_errors %}
-            <p>{{ error }}</p>
-        {% endfor %}
+        <ul class="errormessages">
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
     {% endif %}
 
     {% if post_success %}
-        <p class="cms-form-success-message">
+        <div class="cms-form-success-message{% if instance.success_message %} markdown{% endif %}">
             {% if form_success_url %}
                 {% blocktrans %}You will be <a href="{{ form_success_url }}">redirected shortly</a>.{% endblocktrans %}
             {% elif instance.success_message %}
-                {{ instance.success_message }}
+                {{ instance.success_message|markdown }}
             {% else %}
-                {% blocktrans %}Thank you for submitting your information.{% endblocktrans %}
+                <p>{% blocktrans %}Thank you for submitting your information.{% endblocktrans %}</p>
             {% endif %}
+        </div>
+        {% if form_success_url %}
+        <p class="aldryn-form-redirected-shortly">
+            {% blocktrans %}You will be <a href="{{ form_success_url }}">redirected shortly</a>.{% endblocktrans %}
         </p>
-    {% else %}
+    {% endif %}
+{% else %}
         {% csrf_token %}
         {% for plugin in instance.child_plugin_instances %}
             {% render_plugin plugin %}

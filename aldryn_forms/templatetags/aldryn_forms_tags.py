@@ -2,6 +2,8 @@ from django import template
 from django.utils import encoding
 from django.utils.safestring import mark_safe
 
+import markdown as markdown_module
+
 
 register = template.Library()
 
@@ -20,6 +22,10 @@ def render_notification_text(context, email_notification, email_type):
 
 @register.simple_tag()
 def render_form_widget(field, **kwargs):
+    if "class" in kwargs and field.errors:
+        if kwargs["class"]:
+            kwargs["class"] += " "
+        kwargs["class"] += "has-error"
     markup = field.as_widget(attrs=kwargs)
     return mark_safe(markup)
 
@@ -32,3 +38,8 @@ def force_text(val):
 @register.filter()
 def force_text_list(val):
     return [encoding.force_text(v) for v in val]
+
+
+@register.filter()
+def markdown(text):
+    return mark_safe(markdown_module.markdown(text))
