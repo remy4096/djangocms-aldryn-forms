@@ -1,9 +1,11 @@
 from email.utils import formataddr
 
+from django.conf import settings
 from django.contrib import admin
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.encoding import force_str
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
 from import_export.fields import Field
@@ -35,7 +37,7 @@ class AldrynFormExportField(Field):
 
 class BaseFormSubmissionAdmin(admin.ModelAdmin):
     date_hierarchy = 'sent_at'
-    list_display = [str_dunder_method, 'sent_at', 'language']
+    list_display = [str_dunder_method, 'sent_at', 'language', 'display_data']
     list_filter = ['name', 'language']
     readonly_fields = [
         'name',
@@ -198,3 +200,10 @@ class BaseFormSubmissionAdmin(admin.ModelAdmin):
             resource.fields[force_str(field.attribute)] = field
 
         return getattr(resource.export(dataset), export_type)
+
+    def display_data(self, obj):
+        if hasattr(settings, 'ALDRYN_FORMS_SUBMISSION_LIST_DISPLAY_FIELD'):
+            submission_field = import_string(settings.ALDRYN_FORMS_SUBMISSION_LIST_DISPLAY_FIELD)
+            return submission_field(obj)
+        return ''
+    display_data.short_description = _('data')
