@@ -578,6 +578,57 @@ class ImageUploadFieldPlugin(FileFieldPluginBase):
     )
 
 
+class DateFieldPlugin(FieldPluginBase):
+    """Date field plugin."""
+    earliest_date = models.DateField(
+        verbose_name=_('Earliest date'),
+        blank=None, null=True,
+        help_text=_('The earliest date to accept.'))
+    latest_date = models.DateField(
+        verbose_name=_('Latest date'),
+        blank=None, null=True,
+        help_text=_('The latest date to accept.'))
+    input_step = models.PositiveIntegerField(
+        blank=True, null=True, verbose_name=_('Step'),
+        help_text=_('The granularity numnber.'))
+
+
+class DateTimeLocalFieldPlugin(FieldPluginBase):
+    """Date time local field plugin."""
+    earliest_datetime = models.DateTimeField(
+        verbose_name=_('Earliest datetime'),
+        blank=None, null=True,
+        help_text=_('The earliest datetime to accept.'))
+    latest_datetime = models.DateTimeField(
+        verbose_name=_('Latest datetime'),
+        blank=None, null=True,
+        help_text=_('The latest datetime to accept.'))
+    input_step = models.PositiveIntegerField(
+        blank=True, null=True, verbose_name=_('Step'),
+        help_text=_('The granularity numnber.'))
+
+
+class TimeFieldPlugin(FieldPluginBase):
+    """Time field plugin."""
+    earliest_time = models.TimeField(
+        verbose_name=_('Earliest time'),
+        blank=None, null=True,
+        help_text=_('The earliest time to accept.'))
+    latest_time = models.TimeField(
+        verbose_name=_('Latest time'),
+        blank=None, null=True,
+        help_text=_('The latest time to accept.'))
+    input_step = models.PositiveIntegerField(
+        blank=True, null=True, verbose_name=_('Step'),
+        help_text=_('The granularity numnber.'))
+    data_list = models.SlugField(
+        blank=True, null=True, verbose_name=_('Datalist'),
+        help_text=_('Datalist id of html element datalist with options.'))
+    readonly = models.BooleanField(
+        default=False, verbose_name=_('Read only'),
+        help_text=_('The field cannot be edited by the user.'))
+
+
 class Option(models.Model):
     field = models.ForeignKey(FieldPlugin, editable=False, on_delete=models.CASCADE)
     value = models.CharField(_('Value'), max_length=255)

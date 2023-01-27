@@ -23,11 +23,11 @@ from filer.models import filemodels, imagemodels
 
 from . import models
 from .forms import (
-    BooleanFieldForm, CaptchaFieldForm, EmailFieldForm, FileFieldForm,
-    FormPluginForm, FormSubmissionBaseForm, HiddenFieldForm, ImageFieldForm,
-    MultipleSelectFieldForm, RadioFieldForm, RestrictedFileField,
-    RestrictedImageField, RestrictedMultipleFilesField, SelectFieldForm,
-    TextAreaFieldForm, TextFieldForm,
+    BooleanFieldForm, CaptchaFieldForm, DateFieldForm, DateTimeFieldForm,
+    EmailFieldForm, FileFieldForm, FormPluginForm, FormSubmissionBaseForm,
+    HiddenFieldForm, ImageFieldForm, MultipleSelectFieldForm, RadioFieldForm,
+    RestrictedFileField, RestrictedImageField, RestrictedMultipleFilesField,
+    SelectFieldForm, TextAreaFieldForm, TextFieldForm, TimeFieldForm,
 )
 from .helpers import get_user_name
 from .models import SerializedFormField
@@ -562,6 +562,94 @@ class PhoneField(BaseTextField):
     form_field_widget_input_type = 'phone'
 
 
+class DateField(BaseTextField):
+    name = _('Date Field')
+    model = models.DateFieldPlugin
+    form = DateFieldForm
+    form_field_widget_input_type = 'date'
+    fieldset_general_fields = [
+        'label',
+        'name',
+        'required',
+    ]
+    fieldset_advanced_fields = [
+        ('earliest_date', 'latest_date', 'input_step'),
+        'attributes',
+        'help_text',
+        'required_message',
+        'custom_classes',
+    ]
+
+    def get_form_field_widget_attrs(self, instance):
+        attrs = super(DateField, self).get_form_field_widget_attrs(instance)
+        if instance.earliest_date is not None:
+            attrs['min'] = instance.earliest_date.isoformat()
+        if instance.latest_date is not None:
+            attrs['max'] = instance.latest_date.isoformat()
+        if instance.input_step is not None:
+            attrs['step'] = instance.input_step
+        return attrs
+
+
+class DateTimeLocalField(BaseTextField):
+    name = _('Datetime local Field')
+    model = models.DateTimeLocalFieldPlugin
+    form = DateTimeFieldForm
+    form_field_widget_input_type = 'datetime-local'
+    fieldset_general_fields = [
+        'label',
+        'name',
+        'required',
+    ]
+    fieldset_advanced_fields = [
+        ('earliest_datetime', 'latest_datetime', 'input_step'),
+        'attributes',
+        'help_text',
+        'required_message',
+        'custom_classes',
+    ]
+
+    def get_form_field_widget_attrs(self, instance):
+        attrs = super(DateTimeLocalField, self).get_form_field_widget_attrs(instance)
+        if instance.earliest_datetime is not None:
+            attrs['min'] = instance.earliest_datetime.replace(tzinfo=None).isoformat(timespec='minutes')
+        if instance.latest_datetime is not None:
+            attrs['max'] = instance.latest_datetime.replace(tzinfo=None).isoformat(timespec='minutes')
+        if instance.input_step is not None:
+            attrs['step'] = instance.input_step
+        return attrs
+
+
+class TimeField(BaseTextField):
+    name = _('Time Field')
+    model = models.TimeFieldPlugin
+    form = TimeFieldForm
+    form_field_widget_input_type = 'time'
+    fieldset_advanced_fields = [
+        ('earliest_time', 'latest_time', 'input_step'),
+        'data_list',
+        'readonly',
+        'attributes',
+        'help_text',
+        'required_message',
+        'custom_classes',
+    ]
+
+    def get_form_field_widget_attrs(self, instance):
+        attrs = super(TimeField, self).get_form_field_widget_attrs(instance)
+        if instance.earliest_time is not None:
+            attrs['min'] = instance.earliest_time.isoformat(timespec='minutes')
+        if instance.latest_time is not None:
+            attrs['max'] = instance.latest_time.isoformat(timespec='minutes')
+        if instance.input_step is not None:
+            attrs['step'] = instance.input_step
+        if instance.data_list is not None:
+            attrs['list'] = instance.data_list
+        if instance.readonly:
+            attrs['readonly'] = True
+        return attrs
+
+
 class NumberField(BaseTextField):
     name = _('Number Field')
     form_field_widget_input_type = 'number'
@@ -954,6 +1042,9 @@ plugin_pool.register_plugin(FileField)
 plugin_pool.register_plugin(MultipleFilesField)
 plugin_pool.register_plugin(HiddenField)
 plugin_pool.register_plugin(PhoneField)
+plugin_pool.register_plugin(DateField)
+plugin_pool.register_plugin(TimeField)
+plugin_pool.register_plugin(DateTimeLocalField)
 plugin_pool.register_plugin(NumberField)
 plugin_pool.register_plugin(ImageField)
 plugin_pool.register_plugin(Fieldset)
