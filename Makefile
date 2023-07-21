@@ -1,9 +1,6 @@
 APP = aldryn_forms
-LANG_CODE ?= cs
-TRANSLATIONS = ${APP}/locale/${LANG_CODE}/LC_MESSAGES/django.po
-TRANSLATIONS_JS = ${APP}/locale/${LANG_CODE}/LC_MESSAGES/djangojs.po
 
-.PHONY: default msg msg-py msg-make-py msg-sort-py msg-js msg-make-js msg-sort-js test isort check-css
+.PHONY: default msg msg-compile msg-py msg-make-py msg-sort-py msg-js msg-make-js msg-sort-js test isort check-css
 
 default: test
 
@@ -25,6 +22,16 @@ msg-make-js:
 
 msg-sort-js:
 	msgattrib --sort-output --no-location --no-obsolete -o ${TRANSLATIONS_JS} ${TRANSLATIONS_JS}
+
+msg-compile:
+	msgfmt ${APP}/locale/cs/LC_MESSAGES/django.po -o ${APP}/locale/cs/LC_MESSAGES/django.mo
+	msgfmt ${APP}/locale/cs/LC_MESSAGES/djangojs.po -o ${APP}/locale/cs/LC_MESSAGES/djangojs.mo
+	msgfmt ${APP}/locale/de/LC_MESSAGES/django.po -o ${APP}/locale/de/LC_MESSAGES/django.mo
+	msgfmt ${APP}/locale/fa/LC_MESSAGES/django.po -o ${APP}/locale/fa/LC_MESSAGES/django.mo
+	msgfmt ${APP}/locale/fr/LC_MESSAGES/django.po -o ${APP}/locale/fr/LC_MESSAGES/django.mo
+	msgfmt ${APP}/locale/it/LC_MESSAGES/django.po -o ${APP}/locale/it/LC_MESSAGES/django.mo
+	msgfmt ${APP}/locale/lt/LC_MESSAGES/django.po -o ${APP}/locale/lt/LC_MESSAGES/django.mo
+	msgfmt ${APP}/locale/nl/LC_MESSAGES/django.po -o ${APP}/locale/nl/LC_MESSAGES/django.mo
 
 test:
 	tox --parallel all --parallel-live
