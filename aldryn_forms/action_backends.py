@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class DefaultAction(BaseAction):
-    verbose_name = _('Default')
+    verbose_name = _('Save to site administration and send email')
 
     def form_valid(self, cmsplugin, instance, request, form):
         recipients = cmsplugin.send_notifications(instance, form)
@@ -19,7 +19,7 @@ class DefaultAction(BaseAction):
 
 
 class EmailAction(BaseAction):
-    verbose_name = _('Email only')
+    verbose_name = _('Only send email')
 
     def form_valid(self, cmsplugin, instance, request, form):
         recipients = cmsplugin.send_notifications(instance, form)
@@ -28,7 +28,7 @@ class EmailAction(BaseAction):
 
 
 class NoAction(BaseAction):
-    verbose_name = _('None')
+    verbose_name = _('No action')
 
     def form_valid(self, cmsplugin, instance, request, form):
         form_id = form.form_plugin.id

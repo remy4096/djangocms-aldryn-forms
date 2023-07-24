@@ -106,9 +106,9 @@ class GetActionsTestCase(CMSTestCase):
 class ActionChoicesTestCase(CMSTestCase):
     def test_default_backends(self):
         expected = [
-            ('default', _('Default')),
-            ('email_only', _('Email only')),
-            ('none', _('None')),
+            ('none', 'No action'),
+            ('email_only', 'Only send email'),
+            ('default', 'Save to site administration and send email'),
         ]
 
         choices = action_backend_choices()

@@ -328,6 +328,9 @@ msgstr "Jméno"
 msgid "No"
 msgstr "Ne"
 
+msgid "No action"
+msgstr "Žádná akce"
+
 msgid "No records found"
 msgstr "Záznamy nenalezeny"
 
@@ -336,6 +339,9 @@ msgstr "Bez hodnoty"
 
 msgid "Number Field"
 msgstr "Pole Číslo"
+
+msgid "Only send email"
+msgstr "Jen poslat e-mail"
 
 msgid "Option"
 msgstr "Volba"
@@ -398,6 +404,9 @@ msgstr "Povinné pole"
 
 msgid "Required number of characters to type."
 msgstr "Požadovaný počet znaků pro psaní."
+
+msgid "Save to site administration and send email"
+msgstr "Uložit do administrace webu a poslat e-mail"
 
 msgid "Select Field"
 msgstr "Pole Seznam hodnot"
