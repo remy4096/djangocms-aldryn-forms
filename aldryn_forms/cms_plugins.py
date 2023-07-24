@@ -211,12 +211,12 @@ class FormPlugin(FieldContainer):
             'form_plugin': instance,
         }
 
-        from_email = None
+        reply_to = None
         for field_name, field_instance in form.fields.items():
             if hasattr(field_instance, '_model_instance') and \
                     field_instance._model_instance.plugin_type == 'EmailIntoFromField':
                 if form.cleaned_data.get(field_name):
-                    from_email = form.cleaned_data[field_name]
+                    reply_to = [form.cleaned_data[field_name]]
                     break
 
         subject_template_base = getattr(settings, 'ALDRYN_FORMS_EMAIL_SUBJECT_TEMPLATES_BASE',
@@ -233,7 +233,7 @@ class FormPlugin(FieldContainer):
             template_base=getattr(settings, 'ALDRYN_FORMS_EMAIL_TEMPLATES_BASE', 'aldryn_forms/emails/notification'),
             subject_templates=subject_templates,
             language=instance.language,
-            from_email=from_email,
+            reply_to=reply_to,
         )
 
         users_notified = [
