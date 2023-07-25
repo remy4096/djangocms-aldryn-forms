@@ -88,7 +88,6 @@ Available Plug-ins
 - ``TimeField``
 - ``NumberField``
 - ``EmailField``
-- ``EmailIntoFromField``
 - ``FileField`` renders a file upload input.
 - ``MultipleFilesField``
 - ``ImageField`` same as ``FileField`` but validates that the uploaded file is an image.
@@ -112,5 +111,5 @@ Available Plug-ins
    :target: https://pypi.python.org/pypi/djangocms-aldryn-forms
    :alt: Python versions
 .. |License| image:: https://img.shields.io/pypi/l/djangocms-aldryn-forms.svg
-    :target: https://pypi.python.org/pypi/djangocms-aldryn-forms/
-    :alt: license
+    :target: https://github.com/CZ-NIC/djangocms-aldryn-forms/blob/master/LICENSE.txt
+    :alt: BSD License

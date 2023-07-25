@@ -214,7 +214,7 @@ class FormPlugin(FieldContainer):
         reply_to = None
         for field_name, field_instance in form.fields.items():
             if hasattr(field_instance, '_model_instance') and \
-                    field_instance._model_instance.plugin_type == 'EmailIntoFromField':
+                    field_instance._model_instance.plugin_type == 'EmailField':
                 if form.cleaned_data.get(field_name):
                     reply_to = [form.cleaned_data[field_name]]
                     break
@@ -687,10 +687,6 @@ class EmailField(BaseTextField):
             self.send_notification_email(email, form, instance)
 
 
-class EmailIntoFromField(EmailField):
-    name = _('Email into From Field')
-
-
 class FileField(Field):
     name = _('File upload field')
     model = models.FileUploadFieldPlugin
@@ -1033,7 +1029,6 @@ class SubmitButton(FormElement):
 
 plugin_pool.register_plugin(BooleanField)
 plugin_pool.register_plugin(EmailField)
-plugin_pool.register_plugin(EmailIntoFromField)
 plugin_pool.register_plugin(FileField)
 plugin_pool.register_plugin(MultipleFilesField)
 plugin_pool.register_plugin(HiddenField)
