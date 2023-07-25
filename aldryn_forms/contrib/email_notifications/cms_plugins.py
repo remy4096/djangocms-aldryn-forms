@@ -172,10 +172,10 @@ class EmailNotificationForm(FormPlugin):
         try:
             connection = get_connection(fail_silently=False)
             connection.open()
-        except:  # noqa
+        except Exception as msg:
             # I use a "catch all" in order to not couple this handler to a specific email backend
             # different email backends have different exceptions.
-            logger.exception("Could not send notification emails.")
+            logger.exception(f"Could not send notification emails. {msg}")
             return []
 
         notifications = instance.email_notifications.select_related('form')
@@ -194,9 +194,9 @@ class EmailNotificationForm(FormPlugin):
 
         try:
             connection.send_messages(emails)
-        except:  # noqa
+        except Exception as msg:
             # again, we catch all exceptions to be backend agnostic
-            logger.exception("Could not send notification emails.")
+            logger.exception(f"Could not send notification emails. {msg}")
             recipients = []
         return recipients
 
