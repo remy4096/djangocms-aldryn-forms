@@ -3,6 +3,7 @@
 *.egg-info
 *.log
 *.pot
+*.bak
 .DS_Store
 .coverage/
 .eggs/
