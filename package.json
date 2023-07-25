@@ -6,7 +6,7 @@
     "test": "tests"
   },
   "scripts": {
-    "check": "eslint aldryn_forms/static/aldryn_forms/js/src",
+    "check-js": "eslint --ext .js aldryn_forms/static/aldryn_forms/js/src",
     "build": "webpack"
   },
   "repository": {

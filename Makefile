@@ -1,49 +1,43 @@
 APP = aldryn_forms
+CODES ?= cs de en fa fr it lt nl
 
-.PHONY: default msg msg-compile msg-py msg-make-py msg-sort-py msg-js msg-make-js msg-sort-js test isort check-css
+.PHONY: help msg-make msg-compile test check-js build-js-css
 
-default: test
+help:
+	@echo "make msg-make"
+	@echo "    Make translations."
+	@echo "make msg-compile"
+	@echo "    Compile translations. Use CODES in the same way as for the msg-make."
+	@echo "make test"
+	@echo "    Run tests."
+	@echo "make check-js:"
+	@echo "    Check javascript code. Run npm -i manually before the command."
+	@echo "make build-js-css"
+	@echo "    Build js and css. Run npm -i manually if node_modules isn't installed yet."
 
 # Translations
-msg: msg-py msg-js
-
-msg-py: msg-make-py msg-sort-py
-
-msg-make-py:
-	unset -v DJANGO_SETTINGS_MODULE; cd ${APP} && django-admin makemessages -l cs
-
-msg-sort-py:
-	msgattrib --sort-output --no-location --no-obsolete -o ${TRANSLATIONS} ${TRANSLATIONS}
-
-msg-js: msg-make-js msg-sort-js
-
-msg-make-js:
-	unset -v DJANGO_SETTINGS_MODULE; cd ${APP} && django-admin makemessages -l cs -d djangojs
-
-msg-sort-js:
-	msgattrib --sort-output --no-location --no-obsolete -o ${TRANSLATIONS_JS} ${TRANSLATIONS_JS}
+msg-make:
+	@unset -v DJANGO_SETTINGS_MODULE;
+	@cd ${APP} && for CODE in ${CODES}; \
+	do \
+		django-admin makemessages -l $$CODE; \
+		django-admin makemessages -l $$CODE -d djangojs; \
+		msgattrib --sort-output --no-location --no-obsolete --no-fuzzy --output-file=locale/$$CODE/LC_MESSAGES/django.po locale/$$CODE/LC_MESSAGES/django.po; \
+		msgattrib --sort-output --no-location --no-obsolete --no-fuzzy --output-file=locale/$$CODE/LC_MESSAGES/djangojs.po locale/$$CODE/LC_MESSAGES/djangojs.po; \
+	done
 
 msg-compile:
-	msgfmt ${APP}/locale/cs/LC_MESSAGES/django.po -o ${APP}/locale/cs/LC_MESSAGES/django.mo
-	msgfmt ${APP}/locale/cs/LC_MESSAGES/djangojs.po -o ${APP}/locale/cs/LC_MESSAGES/djangojs.mo
-	msgfmt ${APP}/locale/de/LC_MESSAGES/django.po -o ${APP}/locale/de/LC_MESSAGES/django.mo
-	msgfmt ${APP}/locale/fa/LC_MESSAGES/django.po -o ${APP}/locale/fa/LC_MESSAGES/django.mo
-	msgfmt ${APP}/locale/fr/LC_MESSAGES/django.po -o ${APP}/locale/fr/LC_MESSAGES/django.mo
-	msgfmt ${APP}/locale/it/LC_MESSAGES/django.po -o ${APP}/locale/it/LC_MESSAGES/django.mo
-	msgfmt ${APP}/locale/lt/LC_MESSAGES/django.po -o ${APP}/locale/lt/LC_MESSAGES/django.mo
-	msgfmt ${APP}/locale/nl/LC_MESSAGES/django.po -o ${APP}/locale/nl/LC_MESSAGES/django.mo
+	@cd ${APP}/locale && for CODE in ${CODES}; \
+	do \
+		echo "compile locale $$CODE"; \
+		msgfmt $$CODE/LC_MESSAGES/django.po -o $$CODE/LC_MESSAGES/django.mo; \
+		if [ -r $$CODE/LC_MESSAGES/djangojs.po ]; then \
+			msgfmt $$CODE/LC_MESSAGES/djangojs.po -o $$CODE/LC_MESSAGES/djangojs.mo; \
+		fi; \
+	done
 
 test:
 	tox --parallel all --parallel-live
-
-test-coverage:
-	LANG=en_US.UTF-8 PYTHONPATH='./tests:${PYTHONPATH}' DJANGO_SETTINGS_MODULE='settings' coverage run --source=${APP} --branch -m django test ${APP}
-
-isort:
-	isort ${APP}
-
-check-css:
-	npm run check-css
 
 check-js:
 	npm run check-js
