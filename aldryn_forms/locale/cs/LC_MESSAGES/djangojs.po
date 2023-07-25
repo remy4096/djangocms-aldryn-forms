@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-04-20 17:03+0200\n"
+"POT-Creation-Date: 2023-07-25 17:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Zdeněk Böhm <zdenek.bohm@nic.cz>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,23 +20,14 @@ msgstr ""
 msgid "Correct the errors first, please."
 msgstr "Prosím, nejdříve opravte chyby."
 
-msgid "Ctrl-click to select multiple files."
-msgstr "Více souborů vyberete se stisknutou klávesou Ctrl."
-
 msgid "Please wait. Submitting form..."
 msgstr "Prosím čekejte. Formulář se odesílá..."
-
-msgid "The file is larger than allowed."
-msgstr "Soubor je větší než je povoleno."
 
 msgid "The file type is not among the accpeted types."
 msgstr "Typ souboru není mezi povolenými typy."
 
 msgid "The total file size has exceeded the specified limit."
 msgstr "Celková velikost souborů přesáhla stanovený limit."
-
-msgid "This field is required."
-msgstr "Toto pole je povinné."
 
 msgid "This file exceeds the uploaded files limit."
 msgstr "Tento soubor překračuje limit souborů pro nahrání."

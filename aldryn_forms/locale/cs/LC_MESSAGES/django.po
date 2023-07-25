@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-01-27 13:25+0100\n"
+"POT-Creation-Date: 2023-07-25 17:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Petr Peterka <petr.peterka@nic.cz>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -107,14 +107,17 @@ msgstr "Nejdřívější datum a čas"
 msgid "Earliest time"
 msgstr "Nejdřívější čas"
 
+msgid ""
+"Eg if you open the form with a url that contains parameters as 'https://"
+"example.com/sub-page/?email=hello@example.com&name=Alex', then the fields "
+"'email' and 'name' are going to to be filled in automatically."
+msgstr ""
+
 msgid "Email"
 msgstr "E-mail"
 
 msgid "Email Field"
 msgstr "Pole E-mail"
-
-msgid "Email into From Field"
-msgstr "Pole E-mail pro pole From"
 
 msgid "Email notification"
 msgstr "E-mailová notifikace"
@@ -122,8 +125,8 @@ msgstr "E-mailová notifikace"
 msgid "Email notifications"
 msgstr "E-mailové notifikace"
 
-msgid "Email only"
-msgstr "Pouze e-mail"
+msgid "Enable autofill from url parameters"
+msgstr "Aktivovat autodoplnění z url parametrů"
 
 msgid "Enable javascript to view files for upload."
 msgstr "Zapnout javascript pro zobrazení souborů pro nahrání."
@@ -334,9 +337,6 @@ msgstr "Žádná akce"
 msgid "No records found"
 msgstr "Záznamy nenalezeny"
 
-msgid "None"
-msgstr "Bez hodnoty"
-
 msgid "Number Field"
 msgstr "Pole Číslo"
 
@@ -439,6 +439,9 @@ msgstr "Textové pole"
 
 msgid "Thank you for submitting your information."
 msgstr "Děkujeme Vám za vyplnění formuláře."
+
+msgid "The \"name\" field cannot contain spaces."
+msgstr "Pole \"name\" nemůže obsahovat mezery."
 
 msgid "The earliest date to accept."
 msgstr "Nejdřívější akceptovatelné datum."
@@ -624,6 +627,13 @@ msgstr "odesláno v"
 msgid "subject"
 msgstr "předmět"
 
+msgid ""
+"the variables can be used within the email body, email sender,and other "
+"notification fields"
+msgstr ""
+"proměnné mohou být použity v těle e-mailu, v e-mailu odesílatele a v "
+"ostatních notifikačních polích"
+
 msgid "theme"
 msgstr "motiv"
 
@@ -647,8 +657,3 @@ msgstr "Použito pouze pro zobrazení zprávy v textovém módu."
 
 msgid "users notified"
 msgstr "Upozornění uživatelé"
-
-#, python-brace-format
-msgid ""
-"variables can be used with by wrapping with \"${variable}\" like ${variable}"
-msgstr "proměnné mohou být použity obalením \"${variable}\" jako ${variable}"
