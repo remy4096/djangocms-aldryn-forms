@@ -1,5 +1,5 @@
 {
-  "name": "aldryn-forms",
+  "name": "djangocms-aldryn-forms",
   "version": "1.0.0",
   "description": "Aldryn forms javascript.",
   "directories": {
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zbohm/aldryn-forms.git"
+    "url": "git+https://github.com/CZ-NIC/djangocms-aldryn-forms.git"
   },
   "author": "Zdeněk Böhm",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/zbohm/aldryn-forms/issues"
+    "url": "https://github.com/CZ-NIC/djangocms-aldryn-forms/issues"
   },
-  "homepage": "https://github.com/zbohm/aldryn-forms#readme",
+  "homepage": "https://github.com/CZ-NIC/djangocms-aldryn-forms#readme",
   "dependencies": {
     "eslint": "^7.24.0",
     "webpack": "^5.34.0",
