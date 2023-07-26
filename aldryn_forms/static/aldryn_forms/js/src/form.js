@@ -84,6 +84,28 @@ export function handleRequiredFields(event) {
 }
 
 
+function blockSubmit(nodeInput) {
+    const form = nodeInput.closest("form")
+    for (const button of form.querySelectorAll('[type=submit]')) {
+        button.disabled = true
+        button.insertAdjacentHTML(
+            'afterend', '<div class="text-danger aldryn-forms aldryn-forms-submit-msg">'
+            + gettext("Correct the errors first, please.") + '</div>')
+    }
+}
+
+
+function unblockSubmit(nodeInput) {
+    const form = nodeInput.closest("form")
+    for (const button of form.querySelectorAll('[type=submit]')) {
+        button.disabled = false
+    }
+    for (const element of form.getElementsByClassName('aldryn-forms-submit-msg')) {
+        element.remove()
+    }
+}
+
+
 function handleChangeFilesList(nodeInputFile) {
     const listFileNames = nodeInputFile.parentNode.querySelector('ul.upload-file-names')
     if (listFileNames === null) {
@@ -93,10 +115,10 @@ function handleChangeFilesList(nodeInputFile) {
     unblockSubmit(nodeInputFile)
 
     const accept = nodeInputFile.accept.length ? nodeInputFile.accept.split(',') : []
-    let extensions = [],
+    const extensions = [],
         mimetypes = [],
-        maim_mimes = [],
-        is_valid = true
+        maim_mimes = []
+    let is_valid = true
 
     let files_size_summary = null
     if (nodeInputFile.dataset.max_size !== null) {
@@ -134,7 +156,7 @@ function handleChangeFilesList(nodeInputFile) {
         const name = document.createElement("span")
         name.appendChild(document.createTextNode(file_name + " "))
         item.appendChild(name)
-        let errors = []
+        const errors = []
         if (i >= nodeInputFile.dataset.max_files) {
             errors.push(gettext('This file exceeds the uploaded files limit.'))
         }
@@ -171,35 +193,13 @@ function handleChangeFilesList(nodeInputFile) {
             icon.src = '/static/admin/img/icon-alert.svg'
             icon.width = 16
             icon.height = 16
-            name.insertBefore(icon, name.firstChild);
+            name.insertBefore(icon, name.firstChild)
         }
         listFileNames.appendChild(item)
     }
 
     if (!is_valid) {
         blockSubmit(nodeInputFile)
-    }
-}
-
-
-function unblockSubmit(nodeInput) {
-    const form = nodeInput.closest("form")
-    for (const button of form.querySelectorAll('[type=submit]')) {
-        button.disabled = false
-    }
-    for (const element of form.getElementsByClassName('aldryn-forms-submit-msg')) {
-        element.remove()
-    }
-}
-
-
-function blockSubmit(nodeInput) {
-    const form = nodeInput.closest("form")
-    for (const button of form.querySelectorAll('[type=submit]')) {
-        button.disabled = true
-        button.insertAdjacentHTML(
-            'afterend', '<div class="text-danger aldryn-forms aldryn-forms-submit-msg">'
-            + gettext("Correct the errors first, please.") + '</div>')
     }
 }
 
