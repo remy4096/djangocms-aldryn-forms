@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.0.1 (2023-07-31)
+==================
+
+* Do not use CaptchaField when module "captcha" is not in INSTALLED_APPS.
+
 7.0.0 (2023-07-25)
 ==================
 

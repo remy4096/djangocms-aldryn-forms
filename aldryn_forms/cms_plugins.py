@@ -2,6 +2,7 @@ import re
 from typing import Dict
 
 from django import forms
+from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin import TabularInline
@@ -996,6 +997,8 @@ class RadioSelectField(Field):
 
 
 try:
+    if not apps.is_installed("captcha"):  # django-simple-captcha
+        raise ImportError('Module "captcha" is not in INSTALLED_APPS.')
     from captcha.fields import CaptchaField, CaptchaTextInput
 except ImportError:
     pass
