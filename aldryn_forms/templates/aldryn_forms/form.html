@@ -6,10 +6,9 @@
 
 <form method="post"
     id="cms-form"
-    class="cms-form"
     {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}
     {% if instance.form_attributes %} {{ instance.form_attributes_str }}{% endif %}
-    {% if instance.custom_classes %} class="{{ instance.custom_classes }}"{% endif %}>
+    {% if instance.custom_classes %} class="{{ instance.custom_classes }}"{% else %} class="cms-form"{% endif %}>
 
     {% if form.non_field_errors %}
         <ul class="errormessages">
