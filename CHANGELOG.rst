@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.0.4 (2023-09-26)
+==================
+
+* Restrict versions in requirements. Add import django-import-export and django-formtools.
+
 7.0.3 (2023-08-22)
 ==================
 

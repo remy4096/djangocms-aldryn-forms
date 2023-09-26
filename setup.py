@@ -4,16 +4,18 @@ from aldryn_forms import __version__
 
 
 REQUIREMENTS = [
-    'django-cms>=3.11',
-    'django-emailit',
-    'djangocms-text-ckeditor',
-    'djangocms-attributes-field>=1.0.0',
-    'django-tablib',
-    'tablib',
-    'django-filer',
-    'django-sizefield',
-    'markdown',
-    'Pillow',
+    'django-cms~=3.11',
+    'django-emailit~=0.2',
+    'django-filer~=3.0',
+    'django-formtools~=2.4',
+    'django-import-export~=3.3',
+    'django-sizefield~=2.1',
+    'django-tablib~=3.2',
+    'djangocms-attributes-field~=3.0',
+    'djangocms-text-ckeditor~=5.1',
+    'tablib~=3.5',
+    'Markdown~=3.4',
+    'Pillow~=10.0',
 ]
 
 
