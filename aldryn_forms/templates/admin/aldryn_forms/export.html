@@ -2,10 +2,10 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Export form submissions" %}</h1>
+    <h1>{% translate "Export form submissions" %}</h1>
     {% if errors %}
         <p class="errornote">
-            {% blocktrans count errors|length as counter %}Please correct the error below.{% plural %}Please correct the errors below.{% endblocktrans %}
+            {% blocktranslate count errors|length as counter %}Please correct the error below.{% plural %}Please correct the errors below.{% endblocktranslate %}
         </p>
         {{ adminform.non_field_errors }}
     {% endif %}
@@ -27,7 +27,7 @@
         </div>
         <div class="submit-row">
             {% block aldryn_form_buttons %}
-                <input type="submit" value="{% trans "Export" %}" class="default" name="export">
+                <input type="submit" value="{% translate "Export" %}" class="default" name="export">
             {% endblock %}
         </div>
     </form>

@@ -21,11 +21,11 @@
     {% if post_success %}
         <div class="cms-form-success-message{% if instance.success_message %} markdown{% endif %}">
             {% if form_success_url %}
-                {% blocktrans %}You will be <a href="{{ form_success_url }}">redirected shortly</a>.{% endblocktrans %}
+                {% blocktranslate %}You will be <a href="{{ form_success_url }}">redirected shortly</a>.{% endblocktranslate %}
             {% elif instance.success_message %}
                 {{ instance.success_message|markdown }}
             {% else %}
-                <p>{% blocktrans %}Thank you for submitting your information.{% endblocktrans %}</p>
+                <p>{% blocktranslate %}Thank you for submitting your information.{% endblocktranslate %}</p>
             {% endif %}
         </div>
     {% else %}

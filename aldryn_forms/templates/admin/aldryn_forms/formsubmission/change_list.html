@@ -6,7 +6,7 @@
         {% block object-tools-items %}
             <li>
                 {% url cl.opts|admin_urlname:'export' as export_url %}
-                <a href="{{ export_url }}" class="addlink">{% trans "Export Form Entries" %}</a>
+                <a href="{{ export_url }}" class="addlink">{% translate "Export Form Entries" %}</a>
             </li>
             {% if has_add_permission %}
                 {{ block.super }}
