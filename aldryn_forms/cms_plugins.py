@@ -754,13 +754,16 @@ class FileField(Field):
         field_name = form.form_plugin.get_form_field_name(field=instance)
 
         for uploaded_file in request.FILES.getlist(field_name):
-            try:
-                with Image.open(uploaded_file) as img:
-                    img.verify()
-            except:  # noqa
-                model = filemodels.File
-            else:
+            if uploaded_file.content_type == 'image/svg+xml':
                 model = imagemodels.Image
+            else:
+                try:
+                    with Image.open(uploaded_file) as img:
+                        img.verify()
+                except:  # noqa
+                    model = filemodels.File
+                else:
+                    model = imagemodels.Image
 
             filer_file = model(
                 folder=instance.upload_to,

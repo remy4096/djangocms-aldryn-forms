@@ -16,6 +16,7 @@ REQUIREMENTS = [
     'tablib~=3.5',
     'Markdown~=3.4',
     'Pillow~=10.0',
+    'easy-thumbnails[svg]~=2.8',
 ]
 
 

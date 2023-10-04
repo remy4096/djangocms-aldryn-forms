@@ -2,6 +2,7 @@ import re
 
 from django import forms
 from django.conf import settings
+from django.core import validators
 from django.core.exceptions import ValidationError
 from django.forms.forms import NON_FIELD_ERRORS
 from django.forms.utils import ErrorDict
@@ -9,6 +10,7 @@ from django.forms.widgets import ClearableFileInput
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
+from easy_thumbnails.VIL import Image as VILImage
 from PIL import Image
 
 from .models import FormPlugin, FormSubmission
@@ -140,16 +142,41 @@ class RestrictedMultipleFilesField(FileSizeCheckMixin, forms.FileField):
         return self.files
 
 
+def validate_image_and_svg_file_extension(value):
+    if value.content_type == 'image/svg+xml':
+        return True
+    return validators.validate_image_file_extension(value)
+
+
 class RestrictedImageField(FileSizeCheckMixin, forms.ImageField):
+
+    default_validators = [validate_image_and_svg_file_extension]
 
     def __init__(self, *args, **kwargs):
         self.max_width = kwargs.pop('max_width', None)
         self.max_height = kwargs.pop('max_height', None)
         super().__init__(*args, **kwargs)
 
-    def clean(self, *args, **kwargs):
-        data = super().clean(*args, **kwargs)
+    def to_python(self, data):
+        """
+        Check that the file-upload field data contains a valid image (GIF, JPG,
+        PNG, etc. -- whatever Pillow supports).
+        """
+        # Skip calling parent class forms.ImageField.
+        f = super(forms.FileField, self).to_python(data)
+        if f is None:
+            return None
 
+        if data.content_type == 'image/svg+xml':
+            image = VILImage.load(data)
+            if image is None:
+                raise ValidationError(self.error_messages['invalid_image'], code='invalid_image')
+            f.image = image
+            f.content_type = data.content_type
+            return f
+        return super().to_python(data)
+
+    def _clean_image(self, data):
         if data is None or not any([self.max_width, self.max_height]):
             return data
 
@@ -182,6 +209,13 @@ class RestrictedImageField(FileSizeCheckMixin, forms.ImageField):
                 })
 
         return data
+
+    def clean(self, *args, **kwargs):
+        data = super().clean(*args, **kwargs)
+        new_data = []
+        for item in data:
+            new_data.append(self._clean_image(item))
+        return new_data
 
 
 class FormSubmissionBaseForm(forms.Form):
