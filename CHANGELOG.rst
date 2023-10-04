@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.0.5 (2023-10-04)
+==================
+
+* Fix attr multipe in RestrictedMultipleFilesField.
+
 7.0.4 (2023-09-26)
 ==================
 
