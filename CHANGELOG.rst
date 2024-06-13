@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.0.6 (2024-06-13)
+==================
+
+* Fix finding nested plugins in function get_nested_plugins - replace AliasPlugin by descendants.
+
 7.0.5 (2023-10-04)
 ==================
 

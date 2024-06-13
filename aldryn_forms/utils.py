@@ -3,6 +3,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.forms.forms import NON_FIELD_ERRORS
 from django.utils.module_loading import import_string
 
+from cms.cms_plugins import AliasPlugin
 from cms.utils.moderator import get_cmsplugin_queryset
 from cms.utils.plugins import downcast_plugins
 
@@ -67,7 +68,7 @@ def get_user_model():
 
 def get_nested_plugins(parent_plugin, include_self=False):
     """
-    Returns a flat list of plugins from parent_plugin
+    Returns a flat list of plugins from parent_plugin. Replace AliasPlugin by descendants.
     """
     found_plugins = []
 
@@ -77,7 +78,10 @@ def get_nested_plugins(parent_plugin, include_self=False):
     child_plugins = getattr(parent_plugin, 'child_plugin_instances', None) or []
 
     for plugin in child_plugins:
-        found_nested_plugins = get_nested_plugins(plugin, include_self=True)
+        if issubclass(plugin.get_plugin_class(), AliasPlugin):
+            found_nested_plugins = list(plugin.plugin.get_descendants())
+        else:
+            found_nested_plugins = get_nested_plugins(plugin, include_self=True)
         found_plugins.extend(found_nested_plugins)
 
     return found_plugins
