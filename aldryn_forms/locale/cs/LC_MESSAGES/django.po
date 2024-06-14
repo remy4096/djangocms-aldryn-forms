@@ -228,6 +228,9 @@ msgstr "Nápověda"
 msgid "Hidden Field"
 msgstr "Skryté pole"
 
+msgid "Hide content after submitting a form"
+msgstr "Skrýt obsah po odeslání formuláře"
+
 msgid ""
 "If checkbox \"Field is required\" is set, \"Min choices\" must be at least 1."
 msgstr ""

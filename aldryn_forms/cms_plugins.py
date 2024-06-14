@@ -13,6 +13,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import get_language, gettext
 from django.utils.translation import gettext_lazy as _
 
+from cms.models.pluginmodel import CMSPlugin
 from cms.plugin_base import CMSPluginBase
 from cms.plugin_pool import plugin_pool
 
@@ -1031,6 +1032,21 @@ class SubmitButton(FormElement):
     render_template = 'aldryn_forms/submit_button.html'
     name = _('Submit Button')
     model = models.FormButtonPlugin
+
+
+@plugin_pool.register_plugin
+class HideContentWhenPostPlugin(CMSPluginBase):
+    module = _('Forms')
+    name = _("Hide content after submitting a form")
+    model = CMSPlugin
+    render_template = "aldryn_forms/hide_content_when_post.html"
+    cache = False
+    allow_children = True
+
+    def render(self, context, instance, placeholder):
+        context = super().render(context, instance, placeholder)
+        context['display_content'] = context['request'].method != "POST"
+        return context
 
 
 plugin_pool.register_plugin(BooleanField)
