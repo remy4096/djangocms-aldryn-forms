@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.2.0 (2024-06-19)
+==================
+
+* Add ALDRYN_FORMS_EMAIL_AVAILABILITY_CHECKER_CLASS for checking email availability.
+
 7.1.0 (2024-06-18)
 ==================
 
