@@ -2,6 +2,12 @@
 Changelog
 =========
 
+7.2.1 (2024-07-15)
+==================
+
+* Add support for Python 3.11 and 3.12.
+* Fix get descendants in get_form_elements. Fix plugin attribute in get_nested_plugins.
+
 7.2.0 (2024-06-19)
 ==================
 
