@@ -79,10 +79,12 @@ def get_nested_plugins(parent_plugin, include_self=False):
 
     for plugin in child_plugins:
         if issubclass(plugin.get_plugin_class(), AliasPlugin):
-            found_nested_plugins = list(plugin.plugin.get_descendants())
+            if hasattr(plugin, "plugin"):
+                found_plugins.extend(list(plugin.plugin.get_descendants().order_by('path')))
+            else:
+                found_plugins.extend(list(plugin.get_descendants().order_by('path')))
         else:
-            found_nested_plugins = get_nested_plugins(plugin, include_self=True)
-        found_plugins.extend(found_nested_plugins)
+            found_plugins.extend(get_nested_plugins(plugin, include_self=True))
 
     return found_plugins
 

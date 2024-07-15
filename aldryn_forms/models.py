@@ -256,9 +256,11 @@ class BaseFormPlugin(CMSPlugin):
         for plugin in form_elements:
             if issubclass(plugin.get_plugin_class(), Field):
                 field_plugins.append(plugin)
-            elif issubclass(plugin.get_plugin_class(), AliasPlugin) and \
-                    issubclass(plugin.plugin.get_plugin_class(), Field):
-                field_plugins.append(plugin.plugin.get_plugin_instance()[0])
+            elif issubclass(plugin.get_plugin_class(), AliasPlugin):
+                if hasattr(plugin, "plugin"):
+                    plugin = plugin.plugin
+                if issubclass(plugin.get_plugin_class(), Field):
+                    field_plugins.append(plugin.get_plugin_instance()[0])
 
         unique_field_names = []
         for field_plugin in field_plugins:
@@ -320,7 +322,7 @@ class BaseFormPlugin(CMSPlugin):
         from .utils import get_nested_plugins
 
         if self.child_plugin_instances is None:
-            descendants = self.get_descendants().order_by('path')
+            descendants = get_nested_plugins(self)
             # Set parent_id to None in order to
             # fool the build_plugin_tree function.
             # This is sadly necessary to avoid getting all nodes
