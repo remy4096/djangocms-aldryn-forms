@@ -1,6 +1,5 @@
 import re
 
-from django.utils.module_loading import import_string
 from django import forms
 from django.conf import settings
 from django.core import validators
@@ -8,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.forms.forms import NON_FIELD_ERRORS
 from django.forms.utils import ErrorDict
 from django.forms.widgets import ClearableFileInput
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 

@@ -238,7 +238,8 @@ class FormPlugin(FieldContainer):
             send_mail(
                 recipients=[user.email for user in recipients],
                 context=context,
-                template_base=getattr(settings, 'ALDRYN_FORMS_EMAIL_TEMPLATES_BASE', 'aldryn_forms/emails/notification'),
+                template_base=getattr(
+                    settings, 'ALDRYN_FORMS_EMAIL_TEMPLATES_BASE', 'aldryn_forms/emails/notification'),
                 subject_templates=subject_templates,
                 language=instance.language,
                 reply_to=reply_to,
