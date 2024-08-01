@@ -222,6 +222,9 @@ msgstr "Typy formulářů"
 msgid "Forms"
 msgstr "Formuláře"
 
+msgid "From action attribute"
+msgstr "Atribut from action"
+
 msgid "Help text"
 msgstr "Nápověda"
 
@@ -509,6 +512,9 @@ msgstr "Pole Čas"
 
 msgid "Upload files to"
 msgstr "Nahrajte soubory do"
+
+msgid "Use the URL or CMS Page in the form attribute \"action\"."
+msgstr "Použít URL nebo CMS stránku v atributu formuláře \"action\"."
 
 msgid "Used as the email subject when email_send_notification is checked."
 msgstr ""

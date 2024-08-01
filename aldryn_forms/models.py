@@ -184,6 +184,11 @@ class BaseFormPlugin(CMSPlugin):
             "then the fields 'email' and 'name' are going to to be filled in automatically."
         )
     )
+    use_form_action = models.BooleanField(
+        default=False,
+        verbose_name=_("From action attribute"),
+        help_text=_('Use the URL or CMS Page in the form attribute "action".'),
+    )
 
     cmsplugin_ptr = CMSPluginField(
         on_delete=models.CASCADE,

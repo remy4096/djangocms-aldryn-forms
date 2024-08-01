@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.3.0 (2024-08-01)
+==================
+
+* Add field use_form_action for using Absolute URL or CMS Page url in attribute form.action.
+
 7.2.1 (2024-07-15)
 ==================
 
