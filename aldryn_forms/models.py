@@ -186,7 +186,7 @@ class BaseFormPlugin(CMSPlugin):
     )
     use_form_action = models.BooleanField(
         default=False,
-        verbose_name=_("From action attribute"),
+        verbose_name=_("Form action attribute"),
         help_text=_('Use the URL or CMS Page in the form attribute "action".'),
     )
 

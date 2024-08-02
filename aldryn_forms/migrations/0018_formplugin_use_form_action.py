@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             field=models.BooleanField(
                 default=False,
                 help_text='Use the URL or CMS Page in the form attribute "action".',
-                verbose_name="From action attribute",
+                verbose_name="Form action attribute",
             ),
         ),
     ]

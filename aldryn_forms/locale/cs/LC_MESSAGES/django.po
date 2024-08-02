@@ -222,8 +222,8 @@ msgstr "Typy formulářů"
 msgid "Forms"
 msgstr "Formuláře"
 
-msgid "From action attribute"
-msgstr "Atribut from action"
+msgid "Form action attribute"
+msgstr "Atribut form action"
 
 msgid "Help text"
 msgstr "Nápověda"

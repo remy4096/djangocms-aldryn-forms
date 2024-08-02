@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.4.1 (2024-08-02)
+==================
+
+* Display success message only if it is set in the form. Fix typo "Form action attribute".
+
 7.4.0 (2024-08-02)
 ==================
 

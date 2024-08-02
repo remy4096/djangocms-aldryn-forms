@@ -203,9 +203,7 @@ class FormPlugin(FieldContainer):
         """
         if instance.success_message:
             message = markdown.markdown(instance.success_message)
-        else:
-            message = gettext('The form has been sent.')
-        messages.success(request, mark_safe(message))
+            messages.success(request, mark_safe(message))
 
     def send_notifications(self, instance, form):
         users = instance.recipients.exclude(email='')
