@@ -75,7 +75,7 @@ def get_nested_plugins(parent_plugin, include_self=False):
     if include_self:
         found_plugins.append(parent_plugin)
 
-    child_plugins = getattr(parent_plugin, 'child_plugin_instances', None) or []
+    child_plugins = parent_plugin.get_children()
 
     for plugin in child_plugins:
         if issubclass(plugin.get_plugin_class(), AliasPlugin):
