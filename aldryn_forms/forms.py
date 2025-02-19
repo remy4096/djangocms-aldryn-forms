@@ -1,3 +1,4 @@
+import json
 import re
 
 from django import forms
@@ -7,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.forms.forms import NON_FIELD_ERRORS
 from django.forms.utils import ErrorDict
 from django.forms.widgets import ClearableFileInput
+from django.utils.crypto import get_random_string
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
@@ -14,7 +16,8 @@ from django.utils.translation import gettext_lazy as _
 from easy_thumbnails.VIL import Image as VILImage
 from PIL import Image
 
-from .models import FormPlugin, FormSubmission
+from .constants import ALDRYN_FORMS_POST_IDENT_NAME, MAX_IDENT_SIZE
+from .models import FormPlugin, FormSubmission, FormSubmissionBase
 from .sizefield.utils import filesizeformat
 from .utils import add_form_error, get_action_backends, get_user_model
 
@@ -262,6 +265,7 @@ class FormSubmissionBaseForm(forms.Form):
         super().__init__(*args, **kwargs)
         language = self.form_plugin.language
         self.email_availability_checker_class = get_email_availability_checker_class()
+        self.initial_post_ident = None
 
         self.instance = FormSubmission(
             name=self.form_plugin.name,
@@ -321,9 +325,36 @@ class FormSubmissionBaseForm(forms.Form):
                             self._add_error(_("This email is unavailable."), serialized_field.name)
         return self.cleaned_data
 
-    def save(self, commit=False):
+    def generate_post_ident(self):
+        """Generate new post_ident."""
+        return self.initial_post_ident if self.initial_post_ident else get_random_string(MAX_IDENT_SIZE)
+
+    def save_new_submission(self, post_ident: str) -> None:
+        """Save a new submission with unique ID."""
+        self.instance.post_ident = post_ident
         self.instance.set_form_data(self)
         self.instance.save()
+
+    def append_into_previous_submission(self, previous_submit: FormSubmissionBase) -> None:
+        """Append post into previous submission."""
+        data: list[dict[str, str]] = json.loads(previous_submit.data)
+        fields = self.get_serialized_fields(is_confirmation=False)
+        fields_as_dicts = [field._asdict() for field in fields if field.name != ALDRYN_FORMS_POST_IDENT_NAME]
+        data.extend(fields_as_dicts)
+        previous_submit.data = json.dumps(data)
+        previous_submit.save()
+
+    def save(self, commit=False):
+        """Save a new submission or append into a previous one."""
+        post_ident = self.cleaned_data.get(ALDRYN_FORMS_POST_IDENT_NAME)
+        if post_ident is None:
+            self.save_new_submission(self.generate_post_ident())
+        else:
+            try:
+                previous_submit = FormSubmission.objects.get(post_ident=post_ident)
+                self.append_into_previous_submission(previous_submit)
+            except FormSubmission.DoesNotExist:
+                self.save_new_submission(post_ident)
 
 
 class ExtandableErrorForm(forms.ModelForm):

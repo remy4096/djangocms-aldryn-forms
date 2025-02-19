@@ -697,6 +697,7 @@ class FormSubmissionBase(models.Model):
         blank=True,
     )
     sent_at = models.DateTimeField(auto_now_add=True)
+    post_ident = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         abstract = True
@@ -766,3 +767,12 @@ class FormSubmission(FormSubmissionBase):
         ordering = ['-sent_at']
         verbose_name = _('Form submission')
         verbose_name_plural = _('Form submissions')
+
+
+class SubmittedToBeSent(FormSubmissionBase):
+    """Submitted form to be sent by email."""
+
+    class Meta:
+        ordering = ['-sent_at']
+        verbose_name = _('Submitted form to be sent')
+        verbose_name_plural = _('Submitted forms to be sent')

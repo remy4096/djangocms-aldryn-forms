@@ -1,7 +1,8 @@
 import logging
 import re
 import smtplib
-from typing import Dict
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from django import forms
 from django.apps import apps
@@ -10,6 +11,7 @@ from django.contrib import messages
 from django.contrib.admin import TabularInline
 from django.core.validators import MinLengthValidator
 from django.db.models import query
+from django.http import HttpRequest
 from django.template.loader import select_template
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language, gettext
@@ -18,6 +20,7 @@ from django.utils.translation import gettext_lazy as _
 from cms.models.pluginmodel import CMSPlugin
 from cms.plugin_base import CMSPluginBase
 from cms.plugin_pool import plugin_pool
+from cms.plugin_rendering import PluginContext
 
 import markdown
 from emailit.api import send_mail
@@ -26,6 +29,7 @@ from filer.models import filemodels, imagemodels
 from PIL import Image
 
 from . import models
+from .constants import ALDRYN_FORMS_MULTIPLE_SUBMISSION_DURATION, ALDRYN_FORMS_POST_IDENT_NAME, MAX_IDENT_SIZE
 from .forms import (
     BooleanFieldForm, CaptchaFieldForm, DateFieldForm, DateTimeFieldForm, EmailFieldForm, FileFieldForm, FormPluginForm,
     FormSubmissionBaseForm, HiddenFieldForm, ImageFieldForm, MultipleSelectFieldForm, RadioFieldForm,
@@ -33,7 +37,7 @@ from .forms import (
     TextFieldForm, TimeFieldForm,
 )
 from .helpers import get_user_name
-from .models import SerializedFormField
+from .models import SerializedFormField, SubmittedToBeSent
 from .signals import form_post_save, form_pre_save
 from .sizefield.utils import filesizeformat
 from .utils import get_action_backends
@@ -60,6 +64,7 @@ class FormPlugin(FieldContainer):
     model = models.FormPlugin
     form = FormPluginForm
     filter_horizontal = ['recipients']
+    ident_field_name = None
 
     fieldsets = (
         (None, {
@@ -93,25 +98,26 @@ class FormPlugin(FieldContainer):
 
         if request.POST.get('form_plugin_id') == str(instance.id) and form.is_valid():
             context['post_success'] = True
-            context['form_success_url'] = self.get_success_url(instance)
+            context['form_success_url'] = self.get_success_url(instance, form.instance.post_ident)
         context['form'] = form
         return context
 
     def get_render_template(self, context, instance, placeholder):
         return instance.form_template
 
-    def form_valid(self, instance, request, form):
+    def form_valid(self, instance: models.FormPlugin, request: HttpRequest, form: FormSubmissionBaseForm) -> Any:
         action_backend = get_action_backends()[form.form_plugin.action_backend]()
         return action_backend.form_valid(self, instance, request, form)
 
-    def form_invalid(self, instance, request, form):
+    def form_invalid(self, instance: models.FormPlugin, request: HttpRequest, form: FormSubmissionBaseForm) -> None:
         if instance.error_message:
             form._add_error(message=instance.error_message)
 
-    def process_form(self, instance, request):
+    def process_form(self, instance: models.FormPlugin, request: HttpRequest) -> FormSubmissionBaseForm:
         form_class = self.get_form_class(instance)
         form_kwargs = self.get_form_kwargs(instance, request)
         form = form_class(**form_kwargs)
+        form.ident_field_name = self.ident_field_name
 
         # Put files into fields.
         if form.files:
@@ -120,6 +126,8 @@ class FormPlugin(FieldContainer):
                     form.fields[input_name].files = form.files.getlist(input_name)
 
         if request.POST.get('form_plugin_id') == str(instance.id) and form.is_valid():
+            if self.ident_field_name:
+                form.cleaned_data[self.ident_field_name] = request.POST.get(self.ident_field_name, "")[:MAX_IDENT_SIZE]
             fields = [field for field in form.base_fields.values()
                       if hasattr(field, '_plugin_instance')]
 
@@ -193,7 +201,14 @@ class FormPlugin(FieldContainer):
             kwargs['files'] = request.FILES
         return kwargs
 
-    def get_success_url(self, instance):
+    def get_success_url(self, instance: models.FormPlugin, post_ident: Optional[str]) -> str:
+        duration = getattr(settings, ALDRYN_FORMS_MULTIPLE_SUBMISSION_DURATION, 0)
+        if duration and post_ident is not None:
+            result = urlparse(instance.success_url)
+            params = parse_qs(result.query)
+            params[ALDRYN_FORMS_POST_IDENT_NAME] = post_ident
+            result = result._replace(query=urlencode(params))
+            return result.geturl()
         return instance.success_url
 
     def send_success_message(self, instance, request):
@@ -203,7 +218,45 @@ class FormPlugin(FieldContainer):
         """
         if instance.success_message:
             message = markdown.markdown(instance.success_message)
-            messages.success(request, mark_safe(message))
+            if request.META.get('HTTP_X_REQUESTED_WITH') == "XMLHttpRequest":
+                request.aldryn_forms_success_message = message
+            else:
+                messages.success(request, mark_safe(message))
+
+    def save_new_submission(self, form: FormSubmissionBaseForm, post_ident: str) -> SubmittedToBeSent:
+        """Save a new submission to be sent."""
+        return SubmittedToBeSent.objects.create(
+            name=form.instance.name,
+            data=form.instance.data,
+            recipients=form.instance.recipients,
+            language=form.instance.language,
+            form_url=form.instance.form_url,
+            sent_at=form.instance.sent_at,
+            post_ident=post_ident
+        )
+
+    def postpone_send_notifications(
+        self, instance: models.FormPlugin, form: FormSubmissionBaseForm
+    ) -> List[Tuple[str, str]]:
+        users = instance.recipients.exclude(email='')
+        recipients = [user for user in users.iterator() if is_valid_recipient(user.email)]
+        users_notified = [(get_user_name(user), user.email) for user in recipients]
+        form.instance.set_recipients(users_notified)
+        form.instance.set_form_data(form)
+
+        post_ident = form.cleaned_data.get(ALDRYN_FORMS_POST_IDENT_NAME)
+        if post_ident is None or post_ident.strip() == "":
+            post_ident = form.generate_post_ident()
+            form.initial_post_ident = post_ident
+            form.instance = self.save_new_submission(form, post_ident)
+        else:
+            try:
+                previous_submit = SubmittedToBeSent.objects.get(post_ident=post_ident)
+                form.append_into_previous_submission(previous_submit)
+            except SubmittedToBeSent.DoesNotExist:
+                form.instance = self.save_new_submission(form, post_ident)
+
+        return users_notified
 
     def send_notifications(self, instance, form):
         users = instance.recipients.exclude(email='')
@@ -249,6 +302,12 @@ class FormPlugin(FieldContainer):
         users_notified = [
             (get_user_name(user), user.email) for user in recipients]
         return users_notified
+
+
+class FormWithIdentPlugin(FormPlugin):
+    render_template = True
+    name = _("Form with Ident field")
+    ident_field_name = ALDRYN_FORMS_POST_IDENT_NAME
 
 
 class Fieldset(FieldContainer):
@@ -400,7 +459,7 @@ class Field(FormElement):
     def get_form_field_widget_kwargs(self, instance):
         return {}
 
-    def render(self, context, instance, placeholder):
+    def render(self, context: PluginContext, instance: models.FieldPlugin, placeholder: str) -> PluginContext:
         context = super().render(context, instance, placeholder)
 
         form = context.get('form')
@@ -408,7 +467,10 @@ class Field(FormElement):
         if form and hasattr(form, 'form_plugin'):
             form_plugin = form.form_plugin
             field_name = form_plugin.get_form_field_name(field=instance)
-            context['field'] = form[field_name]
+            if not form[field_name].is_hidden:
+                # Do not render hidden fields because they are rendered in template aldryn_forms/form.html
+                # in section {% for field in form.hidden_fields %}
+                context['field'] = form[field_name]
         return context
 
     def get_render_template(self, context, instance, placeholder):
@@ -1073,6 +1135,7 @@ plugin_pool.register_plugin(NumberField)
 plugin_pool.register_plugin(ImageField)
 plugin_pool.register_plugin(Fieldset)
 plugin_pool.register_plugin(FormPlugin)
+plugin_pool.register_plugin(FormWithIdentPlugin)
 plugin_pool.register_plugin(MultipleSelectField)
 plugin_pool.register_plugin(MultipleCheckboxSelectField)
 plugin_pool.register_plugin(RadioSelectField)

@@ -38,6 +38,9 @@
         {% for field in form.hidden_fields %}
             {{ field }}
         {% endfor %}
+        {% if form.ident_field_name %}
+            <input type="hidden" class="aldryn-forms-field-ident" name="{{ form.ident_field_name }}">
+        {% endif %}
     {% endif %}
 </form>
 

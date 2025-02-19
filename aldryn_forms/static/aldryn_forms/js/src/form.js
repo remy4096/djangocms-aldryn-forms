@@ -47,6 +47,18 @@ export function disableButtonSubmit(event, display_message) {
     }
 }
 
+
+function enableButtonSubmit(form) {
+    for (const button of form.querySelectorAll('[type=submit]')) {
+        button.disabled = false
+        button.readOnly = false
+    }
+    for (const msg of form.querySelectorAll('.aldryn-forms-submit-msg')) {
+        msg.remove()
+    }
+}
+
+
 export function handleRequiredFields(event) {
     // Handle required fields.
     let requiredFieldsFulfilled = true
@@ -102,6 +114,29 @@ function unblockSubmit(nodeInput) {
     }
     for (const element of form.getElementsByClassName('aldryn-forms-submit-msg')) {
         element.remove()
+    }
+}
+
+function displayNodeMessages(node, messages, class_name) {
+    node.insertAdjacentHTML(
+        'afterend',
+        `<ul class="messages aldryn-forms-post-message"><li class="${class_name}">`
+        + messages.join(`</li><li class="${class_name}">`) + '</ul>') + '</ul>'
+}
+
+function displayMessage(form, message, class_name) {
+    for (const button of form.querySelectorAll('[type=submit]')) {
+        button.insertAdjacentHTML(
+            'afterend',
+            `<ul class="messages aldryn-forms-post-message">
+                <li class="${class_name}">${message}</li>
+            </ul>`)
+    }
+}
+
+function removeMessages(form) {
+    for (const node of form.querySelectorAll('.aldryn-forms-post-message')) {
+        node.remove()
     }
 }
 
@@ -220,5 +255,54 @@ export function enableFieldUploadDragAndDrop() {
             input.addEventListener('change', (event) => handleChangeFilesList(event.target), false)
             handleChangeFilesList(input)
         }
+    }
+}
+
+
+export async function sendData(form) {
+    removeMessages(form)
+    const formData = new FormData(form)
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        })
+        const data = await response.json()
+        console.log(data)
+        if (data.status === "ERROR") {
+            for (const name in data.form) {
+                if (name === "__all__") {
+                    displayMessage(form, data.form[name], "error")
+                } else {
+                    const input = form.querySelector(`input[name="${name}"]`)
+                    if (input) {
+                        displayNodeMessages(input, data.form[name], "error")
+                    }
+                }
+            }
+        } else {
+            if (form.dataset.run_next) {
+                document[form.dataset.run_next](form, data)
+            } else {
+                displayMessage(form, data.message, "success")
+            }
+        }
+    } catch (e) {
+        displayMessage(form, e, "error")
+    } finally {
+        enableButtonSubmit(form)
+    }
+}
+
+
+export function enableSubmitFromByFetch() {
+    for (const form of document.querySelectorAll('form.submit-by-fetch')) {
+        form.addEventListener("submit", (event) => {
+            event.preventDefault()
+            sendData(form)
+        })
     }
 }

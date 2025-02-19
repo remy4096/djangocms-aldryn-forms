@@ -3,6 +3,8 @@ import {
     disableButtonSubmit,
     handleRequiredFields,
     handleFormRequiredCheckbox,
+    enableSubmitFromByFetch,
+    sendData,
 } from './form'
 
 
@@ -30,4 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     enableFieldUploadDragAndDrop()
+    enableSubmitFromByFetch()
 })
+
+// Allow access from the entire document.
+document.AldrynFormsSendData = sendData

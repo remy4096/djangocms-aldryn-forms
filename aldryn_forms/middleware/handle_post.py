@@ -1,6 +1,7 @@
-from typing import Callable, Dict, Optional, Tuple
+# import markdown
+from typing import Callable, Dict, Optional, Tuple, Union
 
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
 from aldryn_forms.models import FormPlugin
@@ -12,7 +13,7 @@ class HandleHttpPost(MiddlewareMixin):
 
     def process_view(
         self, request: HttpRequest, callback: Callable, callback_args: Tuple[str, ...], callback_kwargs: Dict[str, str]
-    ) -> Optional[HttpResponse]:
+    ) -> Optional[Union[HttpResponseRedirect, JsonResponse]]:
         """Process view when request method is POST and when the form plugin is found."""
 
         if request.method != 'POST':
@@ -32,9 +33,23 @@ class HandleHttpPost(MiddlewareMixin):
 
         form_plugin_instance = form_plugin.get_plugin_instance()[1]
         form = form_plugin_instance.process_form(form_plugin, request)
-        success_url = form_plugin_instance.get_success_url(instance=form_plugin)
 
-        if form.is_valid() and success_url:
-            return HttpResponseRedirect(success_url)
+        if form.is_valid():
+            if request.META.get('HTTP_X_REQUESTED_WITH') == "XMLHttpRequest":
+                return JsonResponse({
+                    "status": "SUCCESS",
+                    "post_ident": form.instance.post_ident,
+                    "message": getattr(request, "aldryn_forms_success_message", "OK")
+                })
+            success_url = form_plugin_instance.get_success_url(
+                instance=form_plugin, post_ident=form.instance.post_ident)
+            if success_url:
+                return HttpResponseRedirect(success_url)
+        else:
+            if request.META.get('HTTP_X_REQUESTED_WITH') == "XMLHttpRequest":
+                return JsonResponse({
+                    "status": "ERROR",
+                    "form": form.errors,
+                })
 
         return None
