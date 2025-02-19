@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional, Tuple, Union
 from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
+from aldryn_forms.constants import ALDRYN_FORMS_POST_IDENT_NAME
 from aldryn_forms.models import FormPlugin
 from aldryn_forms.utils import get_plugin_tree
 
@@ -35,14 +36,14 @@ class HandleHttpPost(MiddlewareMixin):
         form = form_plugin_instance.process_form(form_plugin, request)
 
         if form.is_valid():
+            post_ident = form.cleaned_data.get(ALDRYN_FORMS_POST_IDENT_NAME)
             if request.META.get('HTTP_X_REQUESTED_WITH') == "XMLHttpRequest":
                 return JsonResponse({
                     "status": "SUCCESS",
-                    "post_ident": form.instance.post_ident,
+                    "post_ident": post_ident,
                     "message": getattr(request, "aldryn_forms_success_message", "OK")
                 })
-            success_url = form_plugin_instance.get_success_url(
-                instance=form_plugin, post_ident=form.instance.post_ident)
+            success_url = form_plugin_instance.get_success_url(instance=form_plugin, post_ident=post_ident)
             if success_url:
                 return HttpResponseRedirect(success_url)
         else:

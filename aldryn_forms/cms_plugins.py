@@ -248,13 +248,14 @@ class FormPlugin(FieldContainer):
         if post_ident is None or post_ident.strip() == "":
             post_ident = form.generate_post_ident()
             form.initial_post_ident = post_ident
-            form.instance = self.save_new_submission(form, post_ident)
+            form.cleaned_data[ALDRYN_FORMS_POST_IDENT_NAME] = post_ident
+            self.save_new_submission(form, post_ident)
         else:
             try:
                 previous_submit = SubmittedToBeSent.objects.get(post_ident=post_ident)
                 form.append_into_previous_submission(previous_submit)
             except SubmittedToBeSent.DoesNotExist:
-                form.instance = self.save_new_submission(form, post_ident)
+                self.save_new_submission(form, post_ident)
 
         return users_notified
 
