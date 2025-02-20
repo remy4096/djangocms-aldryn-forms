@@ -265,6 +265,9 @@ msgstr ""
 msgid "Incorrect file size format."
 msgstr "Nesprávný formát velikosti souboru."
 
+msgid "Incorrect form id type."
+msgstr "Nesprávný typ id formuláře."
+
 msgid "Initial value"
 msgstr "Počáteční hodnota"
 
@@ -357,6 +360,9 @@ msgstr "Volba"
 
 msgid "Options"
 msgstr "Volby"
+
+msgid "POST does not contain a form id."
+msgstr "POST neobsahuje id formuláře."
 
 msgid "People who got a notification when form was submitted."
 msgstr "Lidé, kteří dostali upozornění po odeslání formuláře."
@@ -467,6 +473,12 @@ msgstr "Pole nemůže být uživatelem změněno."
 msgid "The form has been sent."
 msgstr "Formulář byl odeslán."
 
+msgid "The form is not active."
+msgstr "Formulář není aktivní."
+
+msgid "The form submission failed. Please try again later."
+msgstr "Odeslání formuláře se nezdařilo. Prosím, zkuste to později."
+
 msgid "The granularity numnber."
 msgstr "Hodnota rozlišení."
 
@@ -498,6 +510,9 @@ msgstr ""
 
 msgid "The maximum width of the uploaded image, in pixels."
 msgstr "Maximální šířka nahrávaného obrázku v pixelech."
+
+msgid "The method is not of type POST."
+msgstr "Metoda není typu POST."
 
 #, python-format
 msgid "The number of uploaded files exceeded the set limit of %(limit)s."

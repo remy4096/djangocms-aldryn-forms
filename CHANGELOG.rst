@@ -6,6 +6,7 @@ Changelog
 ==================
 
 * Fix commands aldryn_forms_send_emails and aldryn_forms_remove_expired_post_idents.
+* Fix middleware HandleHttpPost.
 
 7.5.1 (2025-02-20)
 ==================

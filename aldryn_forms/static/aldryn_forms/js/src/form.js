@@ -268,6 +268,7 @@ export async function sendData(form) {
             body: formData,
             headers: {
                 "X-Requested-With": "XMLHttpRequest",
+                "X-DjangoCms-Aldryn-Forms": "SubmittedForm",
             },
         })
         const data = await response.json()
@@ -275,7 +276,12 @@ export async function sendData(form) {
         if (data.status === "ERROR") {
             for (const name in data.form) {
                 if (name === "__all__") {
-                    displayMessage(form, data.form[name], "error")
+                    const button = form.querySelector('[type=submit]')
+                    if (button) {
+                        displayNodeMessages(button, data.form[name], "error")
+                    } else {
+                        displayMessage(form, data.form[name], "error")
+                    }
                 } else {
                     const input = form.querySelector(`input[name="${name}"]`)
                     if (input) {
