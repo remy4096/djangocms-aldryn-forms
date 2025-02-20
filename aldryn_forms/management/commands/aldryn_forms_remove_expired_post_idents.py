@@ -15,5 +15,5 @@ class Command(BaseCommand):
         if duration:
             expire = django_timezone_now() - timedelta(minutes=duration)
             FormSubmission.objects.filter(
-                post_ident__isnull=False, sent_at__gt=expire
+                post_ident__isnull=False, sent_at__lt=expire
             ).update(post_ident=None)

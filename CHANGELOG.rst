@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.5.2 (2025-02-20)
+==================
+
+* Fix commands aldryn_forms_send_emails and aldryn_forms_remove_expired_post_idents.
+
 7.5.1 (2025-02-20)
 ==================
 
