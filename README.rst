@@ -102,7 +102,7 @@ Available Plug-ins
 Middleware
 ==========
 
-Dispatch submitted form by middleware. If the HTTP header ``HTTP_X_REQUESTED_WITH`` is ``XMLHttpRequest`` a json response is returned.
+Dispatch submitted form by middleware. If the HTTP header ``HTTP_X_DJANGOCMS_ALDRYN_FORMS`` is ``SubmittedForm`` a json response is returned.
 
 Write in settings.py: ::
 
