@@ -84,6 +84,7 @@ class FormPlugin(FieldContainer):
                 'success_message',
                 'recipients',
                 'action_backend',
+                'webhooks',
                 'custom_classes',
                 'form_attributes',
             )
@@ -114,10 +115,19 @@ class FormPlugin(FieldContainer):
             form._add_error(message=instance.error_message)
 
     def process_form(self, instance: models.FormPlugin, request: HttpRequest) -> FormSubmissionBaseForm:
+        PROCESSED_FORM = "aldryn_forms_processed_forms"
+        processed_forms_dict = getattr(request, PROCESSED_FORM, {})
+        processed_form = processed_forms_dict.get(instance.pk)
+        if processed_form is not None:
+            return processed_form  # Form was already processed by middleware HandleHttpPost.
+
         form_class = self.get_form_class(instance)
         form_kwargs = self.get_form_kwargs(instance, request)
         form = form_class(**form_kwargs)
         form.ident_field_name = self.ident_field_name
+
+        processed_forms_dict[instance.pk] = form
+        setattr(request, PROCESSED_FORM, processed_forms_dict)
 
         # Put files into fields.
         if form.files:
@@ -165,6 +175,7 @@ class FormPlugin(FieldContainer):
         elif request.POST.get('form_plugin_id') == str(instance.id) and request.method == 'POST':
             # only call form_invalid if request is POST and form is not valid
             self.form_invalid(instance, request, form)
+
         return form
 
     def get_form_class(self, instance):
@@ -249,13 +260,15 @@ class FormPlugin(FieldContainer):
             post_ident = form.generate_post_ident()
             form.initial_post_ident = post_ident
             form.cleaned_data[ALDRYN_FORMS_POST_IDENT_NAME] = post_ident
-            self.save_new_submission(form, post_ident)
+            new_instance = self.save_new_submission(form, post_ident)
+            new_instance.webhooks.set(instance.webhooks.all())
         else:
             try:
                 previous_submit = SubmittedToBeSent.objects.get(post_ident=post_ident)
                 form.append_into_previous_submission(previous_submit)
             except SubmittedToBeSent.DoesNotExist:
-                self.save_new_submission(form, post_ident)
+                new_instance = self.save_new_submission(form, post_ident)
+                new_instance.webhooks.set(instance.webhooks.all())
 
         return users_notified
 

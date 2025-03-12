@@ -92,6 +92,14 @@ class SerializedFormField(BaseSerializedFormField):
         return self.name.rpartition('_')[0]
 
 
+class Webook(models.Model):
+    name = models.CharField(_("Name"), max_length=255, unique=True)
+    url = models.URLField(_("Webhook URL"), unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class BaseFormPlugin(CMSPlugin):
     FALLBACK_FORM_TEMPLATE = 'aldryn_forms/form.html'
     DEFAULT_FORM_TEMPLATE = getattr(
@@ -162,6 +170,7 @@ class BaseFormPlugin(CMSPlugin):
         default='default',
         choices=action_backend_choices(),
     )
+    webhooks = models.ManyToManyField(Webook, blank=True)
 
     form_attributes = AttributesField(
         verbose_name=_('Attributes'),
@@ -226,8 +235,8 @@ class BaseFormPlugin(CMSPlugin):
             return self.url
 
     def copy_relations(self, oldinstance):
-        for recipient in oldinstance.recipients.all():
-            self.recipients.add(recipient)
+        self.recipients.set(oldinstance.recipients.all())
+        self.webhooks.set(oldinstance.webhooks.all())
 
     def get_submit_button(self):
         from .cms_plugins import SubmitButton
@@ -698,6 +707,7 @@ class FormSubmissionBase(models.Model):
     )
     sent_at = models.DateTimeField(auto_now_add=True)
     post_ident = models.CharField(max_length=64, null=True, blank=True)
+    webhooks = models.ManyToManyField(Webook, blank=True)
 
     class Meta:
         abstract = True

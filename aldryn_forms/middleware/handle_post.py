@@ -20,53 +20,54 @@ class HandleHttpPost(MiddlewareMixin):
         """Process view when request method is POST and when the form plugin is found."""
 
         if request.method != 'POST':
-            return get_response(request, message=_("The method is not of type POST."))
+            return get_response(request)
 
         # The following code is written according to the function submit_form_view in views.py.
         form_plugin_id = request.POST.get('form_plugin_id')
         if form_plugin_id is None:
-            return get_response(request, message=_("POST does not contain a form id."))
+            return get_response(request)
         if not form_plugin_id.isdigit():
-            return get_response(request, message=_("Incorrect form id type."))
+            return get_response(request)
 
         try:
             form_plugin = get_plugin_tree(FormPlugin, pk=form_plugin_id)
         except FormPlugin.DoesNotExist:
-            return get_response(request, message=_("The form is not active."))
+            return get_response(request)
 
         form_plugin_instance = form_plugin.get_plugin_instance()[1]
         form = form_plugin_instance.process_form(form_plugin, request)
 
-        return get_response(request, form, form_plugin)
+        return get_response(request, form_plugin, form)
 
 
 def get_response(
     request: HttpRequest,
-    form: FormSubmissionBaseForm = None,
     form_plugin: FormPlugin = None,
-    message: str = None
+    form: FormSubmissionBaseForm = None,
 ) -> Optional[Union[HttpResponseRedirect, JsonResponse]]:
     """Get response type."""
-    data = {"status": "ERROR"}
-    if form is None:
-        all_msg = [_("The form submission failed. Please try again later.")]
-        if message:
-            all_msg.append(message)
-        data["form"] = {"__all__": all_msg}
-    else:
-        if form.is_valid():
-            data["status"] = "SUCCESS"
-            data["post_ident"] = form.cleaned_data.get(ALDRYN_FORMS_POST_IDENT_NAME)
-            data["message"] = getattr(request, "aldryn_forms_success_message", "OK")
-        else:
-            data["form"] = form.errors
+    if form_plugin is None:
+        return None
 
-    if request.META.get('HTTP_X_DJANGOCMS_ALDRYN_FORMS') == "SubmittedForm":
+    data: dict[str, str] = {"status": "PASS"}
+    if request.method == 'POST':
+        data["status"] = "ERROR"
+        if form is None:
+            data["form"] = {"__all__": [_("The form submission failed. Please try again later.")]}
+        else:
+            if form.is_valid():
+                data["status"] = "SUCCESS"
+                data["post_ident"] = form.cleaned_data.get(ALDRYN_FORMS_POST_IDENT_NAME)
+                data["message"] = getattr(request, "aldryn_forms_success_message", "OK")
+            else:
+                data["form"] = form.errors
+
+    if request.META.get('HTTP_X_REQUESTED_WITH') == "XMLHttpRequest":
         return JsonResponse(data)
 
-    if data.get("post_ident") is not None:
+    if data["status"] == "SUCCESS":
         form_plugin_instance = form_plugin.get_plugin_instance()[1]
-        success_url = form_plugin_instance.get_success_url(instance=form_plugin, post_ident=data["post_ident"])
+        success_url = form_plugin_instance.get_success_url(instance=form_plugin, post_ident=data.get("post_ident"))
         if success_url:
             return HttpResponseRedirect(success_url)
 
