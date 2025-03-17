@@ -2,6 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.http import HttpRequest
 from django.utils.translation import gettext_lazy as _
 
@@ -37,7 +38,8 @@ class DefaultAction(BaseAction):
         form.instance.set_recipients(recipients)
         form.save()
         if not duration:
-            trigger_webhooks(instance.webhooks, form.instance)
+            site = Site.objects.first()
+            trigger_webhooks(instance.webhooks, form.instance, site.domain)
         cmsplugin.send_success_message(instance, request)
 
 
@@ -54,11 +56,11 @@ class EmailAction(BaseAction):
         duration = getattr(settings, ALDRYN_FORMS_MULTIPLE_SUBMISSION_DURATION, 0)
         if duration:
             recipients = cmsplugin.postpone_send_notifications(instance, form)
-            logger.info(f'Pospone sent email notifications to {len(recipients)} recipients.')
         else:
             recipients = cmsplugin.send_notifications(instance, form)
             logger.info(f'Sent email notifications to {len(recipients)} recipients.')
-            trigger_webhooks(instance.webhooks, form.instance)
+            site = Site.objects.first()
+            trigger_webhooks(instance.webhooks, form.instance, site.domain)
         cmsplugin.send_success_message(instance, request)
 
 

@@ -22,13 +22,13 @@ def send_to_webook(url: str, data: str) -> requests.Response:
     return response
 
 
-def trigger_webhooks(webhooks: ManyToManyField, instance: "FormSubmissionBase") -> None:
+def trigger_webhooks(webhooks: ManyToManyField, instance: "FormSubmissionBase", hostname: str) -> None:
     """Trigger webhooks and send them the instance data."""
     from aldryn_forms.api.serializers import FormSubmissionSerializer
-    serializer = FormSubmissionSerializer(instance)
+    serializer = FormSubmissionSerializer(instance, context={"hostname": hostname})
     payload = json.dumps(serializer.data)
     for hook in webhooks.all():
         try:
             send_to_webook(hook.url, payload)
         except RequestException as err:
-            logger.error(err)
+            logger.error(f"{hook.url} {err}")
