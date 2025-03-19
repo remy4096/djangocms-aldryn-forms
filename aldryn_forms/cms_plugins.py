@@ -107,8 +107,9 @@ class FormPlugin(FieldContainer):
         return instance.form_template
 
     def form_valid(self, instance: models.FormPlugin, request: HttpRequest, form: FormSubmissionBaseForm) -> Any:
-        action_backend = get_action_backends()[form.form_plugin.action_backend]()
-        return action_backend.form_valid(self, instance, request, form)
+        if form.form_plugin.action_backend is not None:
+            action_backend = get_action_backends()[form.form_plugin.action_backend]()
+            return action_backend.form_valid(self, instance, request, form)
 
     def form_invalid(self, instance: models.FormPlugin, request: HttpRequest, form: FormSubmissionBaseForm) -> None:
         if instance.error_message:
@@ -197,6 +198,7 @@ class FormPlugin(FieldContainer):
             plugin_instance = field.plugin_instance
             field_plugin = plugin_instance.get_plugin_class_instance()
             form_fields[field.name] = field_plugin.get_form_field(plugin_instance)
+            form_fields[field.name]._form_plugin_instance = instance
         return form_fields
 
     def get_form_kwargs(self, instance, request):
@@ -421,10 +423,12 @@ class Field(FormElement):
         form_field_class = self.get_form_field_class(instance)
         form_field_kwargs = self.get_form_field_kwargs(instance)
         field = form_field_class(**form_field_kwargs)
+        field.required = instance.required
         # allow fields access to their model plugin class instance
         field._model_instance = instance
         # and also to the plugin class instance
         field._plugin_instance = self
+        field._form_plugin_instance = None
         return field
 
     def get_form_field_class(self, instance):
@@ -588,6 +592,41 @@ class BaseTextField(Field):
 
 class TextField(BaseTextField):
     name = _('Text Field')
+
+
+class HoneypotCharField(forms.CharField):
+
+    def clean(self, value):
+        cleaned_value = super().clean(value)
+        if cleaned_value:
+            logger.info(f'Post disabled due to Honeypot "{self.label}" value: "{value}"')
+            self._form_plugin_instance.action_backend = None
+        return cleaned_value
+
+
+class HoneypotField(BaseTextField):
+    name = _('Honeypot Field')
+    form = forms.ModelForm
+    form_field = HoneypotCharField
+    form_field_widget = HoneypotCharField.widget
+    form_field_enabled_options = [
+        'label',
+        'name',
+        'help_text',
+        'validators',
+        'placeholder',
+        'initial_value',
+    ]
+    fieldset_general_fields = [
+        'label',
+        'name',
+        'placeholder_text',
+    ]
+    fieldset_advanced_fields = [
+        'attributes',
+        'help_text',
+        'custom_classes',
+    ]
 
 
 class TextAreaField(BaseTextField):
@@ -1157,3 +1196,4 @@ plugin_pool.register_plugin(SelectField)
 plugin_pool.register_plugin(SubmitButton)
 plugin_pool.register_plugin(TextAreaField)
 plugin_pool.register_plugin(TextField)
+plugin_pool.register_plugin(HoneypotField)
