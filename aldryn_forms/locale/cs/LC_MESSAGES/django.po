@@ -70,6 +70,15 @@ msgstr "Pole Captcha"
 msgid "Continue"
 msgstr "Pokračovat"
 
+msgid "Data sending completed."
+msgstr "Odeslání dat ukončeno."
+
+msgid "Data transfer method"
+msgstr "Metoda přenosu dat"
+
+msgid "Data transform"
+msgstr "Transformace dat"
+
 msgid "Datalist"
 msgstr "Datalist"
 
@@ -169,6 +178,9 @@ msgstr "Export"
 
 msgid "Export Form Entries"
 msgstr "Exportovat položky formuláře"
+
+msgid "Export data via webhook"
+msgstr "Exportovat data přes webhook"
 
 msgid ""
 "Export failed! More than 65,536 entries found, exceeded Excel limitation!"
@@ -274,6 +286,9 @@ msgstr "Nesprávný typ id formuláře."
 msgid "Initial value"
 msgstr "Počáteční hodnota"
 
+msgid "Is spam"
+msgstr "Je spam"
+
 msgid "Label"
 msgstr "Jmenovka"
 
@@ -331,6 +346,9 @@ msgstr "Min hodnota"
 msgid "Min value can not be greater than max value."
 msgstr "Nejmenší hodnota nesmí být větší než největší hodnota."
 
+msgid "Missing items for processing."
+msgstr "Chybí položky pro zpracování."
+
 msgid "Multiple Checkbox Field"
 msgstr "Pole zaškrtávacích políček"
 
@@ -354,6 +372,9 @@ msgstr "Záznamy nenalezeny"
 
 msgid "Number Field"
 msgstr "Pole Číslo"
+
+msgid "Number of items"
+msgstr "Počet položek"
 
 msgid "Only send email"
 msgstr "Jen poslat e-mail"
@@ -408,6 +429,9 @@ msgstr "Pole přepínačů"
 msgid "Read only"
 msgstr "Pouze pro čtení"
 
+msgid "Ready"
+msgstr "Hotovo"
+
 msgid "Recipients"
 msgstr "Příjemci"
 
@@ -435,6 +459,15 @@ msgid ""
 msgstr ""
 "Zvolte složku, kam budou nahrány všechny soubory přiložené pomocí tohoto "
 "pole."
+
+msgid "Send data via webhook"
+msgstr "Odeslat data přes webhook"
+
+msgid "Set as spam"
+msgstr "Nastavit není to spam"
+
+msgid "Set not to spam"
+msgstr "Nastavit není to spam"
 
 #, python-format
 msgid "Size '%s' has incorrect format"

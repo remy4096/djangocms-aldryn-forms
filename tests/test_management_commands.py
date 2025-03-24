@@ -9,7 +9,7 @@ import responses
 from freezegun import freeze_time
 from testfixtures import LogCapture
 
-from aldryn_forms.models import FormSubmission, SubmittedToBeSent, Webook
+from aldryn_forms.models import FormSubmission, SubmittedToBeSent, Webhook
 
 
 @override_settings(ALDRYN_FORMS_MULTIPLE_SUBMISSION_DURATION=30)
@@ -65,7 +65,7 @@ class SendEmailsTest(TestCase):
                 recipients=json.dumps(self.recipients),
                 post_ident="1234567890"
             )
-        webhook = Webook.objects.create(name="Test", url=self.url)
+        webhook = Webhook.objects.create(name="Test", url=self.url)
         tosent.webhooks.add(webhook)
         with freeze_time(datetime(2025, 3, 14, 9, 30, tzinfo=timezone.utc)):
             with responses.RequestsMock():
@@ -82,7 +82,7 @@ class SendEmailsTest(TestCase):
                 recipients=json.dumps(self.recipients),
                 post_ident="1234567890"
             )
-        webhook = Webook.objects.create(name="Test", url=self.url)
+        webhook = Webhook.objects.create(name="Test", url=self.url)
         tosent.webhooks.add(webhook)
         with freeze_time(datetime(2025, 3, 14, 9, 30, tzinfo=timezone.utc)):
             with responses.RequestsMock() as rsps:
@@ -93,7 +93,13 @@ class SendEmailsTest(TestCase):
         msg = mail.outbox[0].message()
         self.assertEqual(msg.get("to"), "dave@foo.foo")
         self.assertEqual(msg.get("subject"), "[Form submission] Test")
-        self.log_handler.check()
+        self.log_handler.check(
+            ('aldryn_forms.api.webhook', 'DEBUG',
+            "{'hostname': 'example.com', 'name': 'Test', 'language': 'en', 'sent_at': "
+            "'2025-03-14T03:59:59-05:00', 'form_recipients': [{'name': 'Dave', 'email': "
+            "'dave@foo.foo'}], 'form_data': [{'name': 'test', 'label': 'Test', "
+            "'field_occurrence': 1, 'value': 1}]}")
+        )
 
     @override_settings(ALDRYN_FORMS_MULTIPLE_SUBMISSION_DURATION=0)
     def test_disabled(self):
@@ -104,7 +110,7 @@ class SendEmailsTest(TestCase):
                 recipients=json.dumps(self.recipients),
                 post_ident="1234567890"
             )
-        webhook = Webook.objects.create(name="Test", url=self.url)
+        webhook = Webhook.objects.create(name="Test", url=self.url)
         tosent.webhooks.add(webhook)
         with freeze_time(datetime(2025, 3, 14, 9, 30, tzinfo=timezone.utc)):
             with responses.RequestsMock() as rsps:
@@ -115,4 +121,10 @@ class SendEmailsTest(TestCase):
         msg = mail.outbox[0].message()
         self.assertEqual(msg.get("to"), "dave@foo.foo")
         self.assertEqual(msg.get("subject"), "[Form submission] Test")
-        self.log_handler.check()
+        self.log_handler.check(
+            ('aldryn_forms.api.webhook', 'DEBUG',
+            "{'hostname': 'example.com', 'name': 'Test', 'language': 'en', 'sent_at': "
+            "'2025-03-14T04:00:00-05:00', 'form_recipients': [{'name': 'Dave', 'email': "
+            "'dave@foo.foo'}], 'form_data': [{'name': 'test', 'label': 'Test', "
+            "'field_occurrence': 1, 'value': 1}]}")
+        )

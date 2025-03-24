@@ -96,7 +96,24 @@ Available Plug-ins
 - ``MultipleSelectField``
 - ``MultipleCheckboxSelectField`` renders multiple checkboxes.
 - ``CaptchaField``
+- ``HoneypotField``
 - ``HideContentWhenPostPlugin``
+
+
+Custom submissions list
+=======================
+
+To display data in the submissions list, enter in settings: ::
+
+    ALDRYN_FORMS_SUBMISSION_LIST_DISPLAY_FIELD = "aldryn_forms.admin.display_form_submission_data"
+
+
+Link to API Root
+================
+
+To set link to API Root Site, enter in settings: ::
+
+    SITE_API_ROOT = "/api/v1/"
 
 
 Middleware

@@ -21,6 +21,7 @@ from djangocms_attributes_field.fields import AttributesField
 from filer.fields.folder import FilerFolderField
 
 from .compat import build_plugin_tree
+from .constants import WEBHOOK_METHODS
 from .helpers import is_form_element
 from .sizefield.models import FileSizeField
 from .utils import ALDRYN_FORMS_ACTION_BACKEND_KEY_MAX_SIZE, action_backend_choices, get_action_backends
@@ -92,9 +93,12 @@ class SerializedFormField(BaseSerializedFormField):
         return self.name.rpartition('_')[0]
 
 
-class Webook(models.Model):
+class Webhook(models.Model):
     name = models.CharField(_("Name"), max_length=255, unique=True)
     url = models.URLField(_("Webhook URL"), unique=True)
+    method = models.CharField(_("Data transfer method"), choices=WEBHOOK_METHODS, max_length=20,
+                              default=WEBHOOK_METHODS[0])
+    transform = models.JSONField(_("Data transform"), null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -170,7 +174,7 @@ class BaseFormPlugin(CMSPlugin):
         default='default',
         choices=action_backend_choices(),
     )
-    webhooks = models.ManyToManyField(Webook, blank=True)
+    webhooks = models.ManyToManyField(Webhook, blank=True)
 
     form_attributes = AttributesField(
         verbose_name=_('Attributes'),
@@ -707,7 +711,8 @@ class FormSubmissionBase(models.Model):
     )
     sent_at = models.DateTimeField(auto_now_add=True)
     post_ident = models.CharField(max_length=64, null=True, blank=True)
-    webhooks = models.ManyToManyField(Webook, blank=True)
+    webhooks = models.ManyToManyField(Webhook, blank=True)
+    honeypot_filled = models.BooleanField(default=False)
 
     class Meta:
         abstract = True
@@ -736,7 +741,7 @@ class FormSubmissionBase(models.Model):
     def _recipients_hook(self, data):
         return Recipient(**data)
 
-    def get_form_data(self):
+    def get_form_data(self) -> List[SerializedFormField]:
         occurrences = defaultdict(lambda: 1)
 
         data_hook = partial(self._form_data_hook, occurrences=occurrences)
@@ -751,7 +756,7 @@ class FormSubmissionBase(models.Model):
             form_data = []
         return form_data
 
-    def get_recipients(self):
+    def get_recipients(self) -> List[Recipient]:
         try:
             recipients = json.loads(
                 self.recipients,
