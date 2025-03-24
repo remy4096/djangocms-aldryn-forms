@@ -34,11 +34,15 @@ class DefaultAction(BaseAction):
         if duration:
             recipients = cmsplugin.postpone_send_notifications(instance, form)
             form.instance.set_recipients(recipients)
-            form.save()
+            submission = form.save()
+            for hook in instance.webhooks.all():
+                submission.webhooks.add(hook)
         elif not form.instance.honeypot_filled:
             recipients = cmsplugin.send_notifications(instance, form)
             form.instance.set_recipients(recipients)
-            form.save()
+            submission = form.save()
+            for hook in instance.webhooks.all():
+                submission.webhooks.add(hook)
             site = Site.objects.first()
             trigger_webhooks(instance.webhooks, form.instance, site.domain)
         cmsplugin.send_success_message(instance, request)

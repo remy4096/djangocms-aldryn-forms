@@ -350,7 +350,7 @@ class FormSubmissionBaseForm(forms.Form):
             previous_submit.honeypot_filled = True
         previous_submit.save()
 
-    def save(self, commit=False):
+    def save(self, commit=False) -> FormSubmissionBase:
         """Save a new submission or append into a previous one."""
         post_ident = self.cleaned_data.get(ALDRYN_FORMS_POST_IDENT_NAME)
         if post_ident is None:
@@ -361,8 +361,10 @@ class FormSubmissionBaseForm(forms.Form):
             try:
                 previous_submit = FormSubmission.objects.get(post_ident=post_ident)
                 self.append_into_previous_submission(previous_submit)
+                return previous_submit
             except FormSubmission.DoesNotExist:
                 self.save_form_submission(post_ident)
+        return self.instance
 
 
 class ExtandableErrorForm(forms.ModelForm):
