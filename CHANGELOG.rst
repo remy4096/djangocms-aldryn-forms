@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.6.1 (2025-03-28)
+==================
+
+* Use icon for toggling visibility of submitted data in the list of form posts.
+
 7.6.0 (2025-03-26)
 ==================
 

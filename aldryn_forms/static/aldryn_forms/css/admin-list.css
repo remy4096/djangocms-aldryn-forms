@@ -31,3 +31,15 @@ table thead th .text span.item-after {
 .aldryn-forms-data .item .value {
     white-space: normal;
 }
+
+.aldryn-forms-data .item-after {
+    float: left;
+    margin-right: 0.4em;
+    position: relative;
+    top: -2px;
+    visibility: hidden;
+}
+
+table tr:hover .aldryn-forms-data .item-after {
+    visibility: visible;
+}
