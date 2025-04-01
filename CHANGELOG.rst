@@ -2,6 +2,11 @@
 Changelog
 =========
 
+7.6.2 (2025-04-01)
+==================
+
+* Better form submission data formatting.
+
 7.6.1 (2025-03-28)
 ==================
 

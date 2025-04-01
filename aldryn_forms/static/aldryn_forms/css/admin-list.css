@@ -12,6 +12,10 @@ table thead th .text span.item-after {
     display: flex;
 }
 
+.aldryn-forms-data .item:hover {
+    background-color: #e8f8ff;
+}
+
 .aldryn-forms-data .item.d-none {
     display: none;
 }
@@ -32,14 +36,23 @@ table thead th .text span.item-after {
     white-space: normal;
 }
 
-.aldryn-forms-data .item-after {
-    float: left;
-    margin-right: 0.4em;
+table td .aldryn-forms-data .item-after {
     position: relative;
-    top: -2px;
+}
+
+table td .aldryn-forms-data .item-after img {
+    position: absolute;
+    left: -24px;
+    top: 4px;
     visibility: hidden;
 }
 
-table tr:hover .aldryn-forms-data .item-after {
+table tr:hover td .aldryn-forms-data .item-after img {
     visibility: visible;
+}
+
+.change-list #changelist .aldryn-forms-formsubmission table tbody td:nth-child(7),
+.change-list #changelist .aldryn-forms-formsubmission table tbody th
+{
+  white-space: normal;
 }

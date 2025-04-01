@@ -11,6 +11,12 @@
     <script src="{% static "aldryn_forms/js/admin_list.js" %}" defer></script>
 {% endblock %}
 
+{% block result_list %}
+    <div class="aldryn-forms-formsubmission">
+        {{ block.super }}
+    </div>
+{% endblock %}
+
 {% block object-tools %}
 	<ul class="object-tools">
         {% block object-tools-items %}
