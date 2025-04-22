@@ -203,6 +203,36 @@ Example of ``runNext`` javascript function: ::
         ...
     }
 
+Submit button
+=============
+
+Before submitting the form, the browser checks by default that all mandatory fields of the form are filled in and their values are of the given type.
+You can add deactivating and activating the Submit button to this behavior.
+If the form is in a state where not all values are correct, the Submit button is deactivated.
+If the form is in the correct state, the button is activated.
+To enable this functionality, add the ``toggle-submit`` class to the ``Form`` plugin.
+
+In the ``Form`` plugin, in the ``data-toggle_submit`` attribute, you can define your own function to handle the form state.
+The function must have one boolean parameter, which determines whether the form is valid or not.
+
+After submitting the form, the Submit button is automatically deactivated to prevent clicking the button repeatedly and submitting the form multiple times.
+This behavior can be disabled by specifying the ``skip-disable-submit`` class in the ``Form`` plugin.
+
+Input type File
+===============
+
+For the File form field, you can display the names of the attached files using javascript.
+This feature is activated in the ``File upload field`` or ``Multiple files upload field`` plugin by activating the ``Enable js`` switch.
+It is also possible to use the ``drag-and-drop`` class to add an area to drag and drop files onto this field.
+The drop icon, placeholder text, and text for the maximum size allowed, if specified, will be displayed on the area.
+In the case of a field of type ``multiple``, the maximum number of items allowed, if specified, will also be displayed.
+If the form is submitted asynchronously (enabled by the ``submit-by-fetch`` class), the trash icon for removing
+the file from the list will automatically appear next to the attached files.
+This makes it possible for the ``multiple`` field type to insert files multiple times.
+
+You can style the form fields with your own css styles. You can replace the default icons with your own. Define the data in the Form plugin:
+data-icon_upload, data-icon_attach, data-icon_error, data-icon_trash.
+
 
 Multiple post save commands
 ===========================

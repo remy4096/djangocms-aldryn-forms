@@ -2,6 +2,12 @@
 Changelog
 =========
 
+7.7.0 (2025-04-22)
+==================
+
+* Add drag-and-drop functionality.
+* Add templatetag media_filer_public_link to display links to upload files.
+
 7.6.2 (2025-04-01)
 ==================
 
