@@ -464,7 +464,7 @@ msgid "Send data via webhook"
 msgstr "Odeslat data přes webhook"
 
 msgid "Set as spam"
-msgstr "Nastavit není to spam"
+msgstr "Nastavit je to spam"
 
 msgid "Set not to spam"
 msgstr "Nastavit není to spam"
