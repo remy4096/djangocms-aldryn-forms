@@ -6,7 +6,8 @@ HELPER_SETTINGS = {
     'INSTALLED_APPS': [
         'tests',
         'aldryn_forms.contrib.email_notifications',
-        'djangocms_text_ckeditor',
+        'djangocms_alias',
+        'djangocms_text',
         'captcha',
         'easy_thumbnails',
         'emailit',
@@ -24,6 +25,7 @@ HELPER_SETTINGS = {
     ),
     'LANGUAGE_CODE': 'en',
     'EMAIL_BACKEND': 'django.core.mail.backends.dummy.EmailBackend',
+    'CMS_CONFIRM_VERSION4': True,
 }
 
 

@@ -71,9 +71,7 @@ class FormPlugin(FieldContainer):
         (None, {
             'fields': (
                 'name',
-                'redirect_type',
-                'redirect_page',
-                'url',
+                'redirect_to',
                 'use_form_action',
             )
         }),

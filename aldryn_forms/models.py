@@ -1,6 +1,5 @@
 import json
 import re
-import warnings
 from collections import defaultdict, namedtuple
 from functools import partial
 from typing import Dict, List
@@ -12,16 +11,16 @@ from django.db.models.functions import Coalesce
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
-from cms.cms_plugins import AliasPlugin
-from cms.models.fields import PageField
 from cms.models.pluginmodel import CMSPlugin
 from cms.utils.plugins import downcast_plugins
 
+from djangocms_alias.models import AliasPlugin
 from djangocms_attributes_field.fields import AttributesField
 from filer.fields.folder import FilerFolderField
 
 from .compat import build_plugin_tree
 from .constants import WEBHOOK_METHODS
+from .fields import AldrynFormsLinkField
 from .helpers import is_form_element
 from .sizefield.models import FileSizeField
 from .utils import ALDRYN_FORMS_ACTION_BACKEND_KEY_MAX_SIZE, action_backend_choices, get_action_backends
@@ -114,13 +113,6 @@ class BaseFormPlugin(CMSPlugin):
     if hasattr(settings, 'ALDRYN_FORMS_TEMPLATES'):
         FORM_TEMPLATES += settings.ALDRYN_FORMS_TEMPLATES
 
-    REDIRECT_TO_PAGE = 'redirect_to_page'
-    REDIRECT_TO_URL = 'redirect_to_url'
-    REDIRECT_CHOICES = [
-        (REDIRECT_TO_PAGE, _('CMS Page')),
-        (REDIRECT_TO_URL, _('Absolute URL')),
-    ]
-
     _form_elements = None
     _form_field_key_cache = None
 
@@ -142,14 +134,7 @@ class BaseFormPlugin(CMSPlugin):
         null=True,
         help_text=_('An success message that will be displayed.')
     )
-    redirect_type = models.CharField(
-        verbose_name=_('Redirect to'),
-        max_length=20,
-        choices=REDIRECT_CHOICES,
-        help_text=_('Where to redirect the user when the form has been successfully sent?'),
-        blank=True,
-    )
-    url = models.URLField(_('Absolute URL'), blank=True, null=True)
+    redirect_to = AldrynFormsLinkField(verbose_name=_('Redirect to'), null=True, blank=True)
     custom_classes = models.CharField(
         verbose_name=_('custom css classes'), max_length=255, blank=True)
     form_template = models.CharField(
@@ -181,13 +166,6 @@ class BaseFormPlugin(CMSPlugin):
         blank=True,
     )
 
-    redirect_page = PageField(
-        verbose_name=_('CMS Page'),
-        blank=True,
-        null=True,
-        on_delete=models.SET_NULL,
-    )
-
     is_enable_autofill_from_url_params = models.BooleanField(
         default=False,
         verbose_name=_("Enable autofill from url parameters"),
@@ -213,30 +191,9 @@ class BaseFormPlugin(CMSPlugin):
     def __str__(self):
         return self.name
 
-    @property
-    def page(self):
-        warnings.warn(
-            'The "page" field has been renamed to redirect_page '
-            'and will be removed on Aldryn Forms 3.1.0',
-            PendingDeprecationWarning
-        )
-        return self.redirect_page
-
-    @page.setter
-    def page(self, value):
-        warnings.warn(
-            'The "page" field has been renamed to redirect_page '
-            'and will be removed on Aldryn Forms 3.1.0',
-            PendingDeprecationWarning
-        )
-        self.redirect_page = value
-
     @cached_property
-    def success_url(self):
-        if self.redirect_type == FormPlugin.REDIRECT_TO_PAGE:
-            return self.redirect_page.get_absolute_url()
-        elif self.redirect_type == FormPlugin.REDIRECT_TO_URL and self.url:
-            return self.url
+    def success_url(self) -> str:
+        return self.redirect_to.url
 
     def copy_relations(self, oldinstance):
         self.recipients.set(oldinstance.recipients.all())
@@ -510,11 +467,15 @@ class EmailFieldPlugin(FieldPluginBase):
     )
 
     def get_parent_form(self):
-        parent = self.get_parent()
+        parent = self.parent
+        used = []
         while parent is not None:
             if parent.plugin_type in ("FormPlugin", "EmailNotificationForm"):
                 break
-            parent = parent.get_parent()
+            parent = self.parent
+            if parent.pk in used:
+                return None
+            used.append(parent.pk)
         return parent
 
     def get_parent_form_action_backend(self):

@@ -8,10 +8,10 @@ from django.forms.forms import NON_FIELD_ERRORS
 from django.utils.module_loading import import_string
 from django.utils.translation import get_language
 
-from cms.cms_plugins import AliasPlugin
-from cms.utils.moderator import get_cmsplugin_queryset
+from cms.models import CMSPlugin
 from cms.utils.plugins import downcast_plugins
 
+from djangocms_alias.models import AliasPlugin
 from emailit.api import send_mail
 from emailit.utils import get_template_names
 
@@ -132,7 +132,7 @@ def get_plugin_tree(model, **kwargs):
 
 
 def get_next_level(current_level):
-    all_plugins = get_cmsplugin_queryset()
+    all_plugins = CMSPlugin.objects.all()
     return all_plugins.filter(parent__in=[x.pk for x in current_level])
 
 
